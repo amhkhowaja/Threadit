@@ -33,7 +33,9 @@ def _wire():
 def _write_client(write: WriteService) -> TestClient:
     app = write_app.create_app()
     app.dependency_overrides[write_app.require_user_id] = lambda: UID
+    app.dependency_overrides[write_app.enforce_rate_limit] = lambda: UID
     app.state.write_service = write
+    app.state.attachment_service = None
     return TestClient(app)
 
 
@@ -90,6 +92,35 @@ def test_get_missing_post_404_problem_json():
     body = r.json()
     assert body["status"] == 404
     assert "correlationId" in body
+
+
+def test_rate_limit_returns_429_with_retry_after():
+    import uuid
+
+    from threadit_core.services.rate_limit import InMemoryRateLimiter
+
+    write, _ = _wire()
+    app = write_app.create_app()
+    app.dependency_overrides[write_app.require_user_id] = lambda: UID
+    app.state.write_service = write
+    app.state.attachment_service = None
+    app.state.rate_limiter = InMemoryRateLimiter()
+    app.state.rate_limit = 2
+    app.state.rate_window = 60
+    c = TestClient(app)
+
+    def _post():
+        return c.post(
+            "/v1/posts",
+            json={"title": "a", "body": "b"},
+            headers={"Idempotency-Key": str(uuid.uuid4())},
+        )
+
+    assert _post().status_code == 201
+    assert _post().status_code == 201
+    blocked = _post()
+    assert blocked.status_code == 429
+    assert int(blocked.headers["Retry-After"]) > 0
 
 
 def test_create_then_read_roundtrip_with_threaded_reply():

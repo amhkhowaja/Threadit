@@ -93,6 +93,10 @@ smoke: ## End-to-end smoke against the Floci-provisioned stack (requires tf-appl
 	THREADIT_AWS_ENDPOINT_URL=http://localhost:4566 \
 	$(PY) tools/smoke.py
 
+.PHONY: nfr
+nfr: ## Multi-user NFR/load suite (set backend env first: Floci or AWS)
+	$(PY) -m tests.load.run_nfr
+
 .PHONY: clean
 clean: ## Remove caches
 	find . -type d -name __pycache__ -prune -exec rm -rf {} + 2>/dev/null || true

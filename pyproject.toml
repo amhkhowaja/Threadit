@@ -52,6 +52,7 @@ select = ["E", "F", "I", "B", "UP", "S", "A", "C4"]
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "S105", "S106"]
 "tools/smoke.py" = ["S101"]
+"tools/e2e_realaws.py" = ["S101"]
 
 # import-linter: no AWS type crosses the repository boundary (R5)
 [tool.importlinter]

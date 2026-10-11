@@ -39,6 +39,12 @@ class Settings(BaseSettings):
 
     # Search (P2). Empty endpoint -> search_keyword returns 501 (P1 behavior).
     opensearch_endpoint: str = Field(default="")
+    opensearch_sign: bool = Field(default=False)
+
+    # Rate limiting (P2). App-level fixed-window per user on writes.
+    write_rate_limit: int = Field(default=30)
+    write_rate_window_s: int = Field(default=60)
+    redis_endpoint: str = Field(default="")
 
 
 def load_settings() -> Settings:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from threadit_core.api.dtos import (
     CommentResponse,
     CreateCommentRequest,
@@ -23,6 +23,7 @@ from threadit_core.repositories.dynamodb import (
 from threadit_core.repositories.keys import MaterializedPathBuilder
 from threadit_core.repositories.s3_presigner import S3AttachmentPresigner, build_s3_client
 from threadit_core.services.attachment_service import AttachmentService
+from threadit_core.services.rate_limit import InMemoryRateLimiter
 from threadit_core.services.write_service import WriteService
 
 
@@ -48,6 +49,9 @@ async def lifespan(app: FastAPI):
     settings = load_settings()
     configure_logging(settings.log_level)
     app.state.write_service = build_write_service(settings)
+    app.state.rate_limiter = _build_rate_limiter(settings)
+    app.state.rate_limit = settings.write_rate_limit
+    app.state.rate_window = settings.write_rate_window_s
     if settings.attachments_bucket:
         s3 = build_s3_client(region=settings.aws_region, endpoint_url=settings.aws_endpoint_url)
         app.state.attachment_service = AttachmentService(
@@ -57,6 +61,31 @@ async def lifespan(app: FastAPI):
     else:
         app.state.attachment_service = None
     yield
+
+
+def _build_rate_limiter(settings):
+    if settings.redis_endpoint:
+        import redis
+        from threadit_core.repositories.redis_cache import RedisRateLimiter
+
+        return RedisRateLimiter(redis.Redis(host=settings.redis_endpoint, port=6379))
+    return InMemoryRateLimiter()
+
+
+def enforce_rate_limit(request: Request, user_id: str = Depends(require_user_id)) -> str:
+    limiter = request.app.state.rate_limiter
+    decision = limiter.check(
+        f"write:{user_id}",
+        limit=request.app.state.rate_limit,
+        window_seconds=request.app.state.rate_window,
+    )
+    if not decision.allowed:
+        raise HTTPException(
+            status_code=429,
+            detail="rate limit exceeded",
+            headers={"Retry-After": str(decision.retry_after)},
+        )
+    return user_id
 
 
 def get_service(request) -> WriteService:
@@ -89,7 +118,7 @@ def create_app() -> FastAPI:
     async def create_post(
         body: CreatePostRequest,
         request: Request,
-        user_id: str = Depends(require_user_id),
+        user_id: str = Depends(enforce_rate_limit),
         idem: str = Depends(require_idempotency_key),
     ) -> PostResponse:
         svc = get_service(request)
@@ -103,7 +132,7 @@ def create_app() -> FastAPI:
         post_id: str,
         body: CreateCommentRequest,
         request: Request,
-        user_id: str = Depends(require_user_id),
+        user_id: str = Depends(enforce_rate_limit),
         idem: str = Depends(require_idempotency_key),
     ) -> CommentResponse:
         svc = get_service(request)
