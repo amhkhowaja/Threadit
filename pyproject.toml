@@ -1,0 +1,64 @@
+[project]
+name = "threadit"
+version = "0.1.0"
+description = "Threadit — message board architected for billions (Phase 1)"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi==0.115.5",
+    "pydantic==2.9.2",
+    "pydantic-settings==2.6.1",
+    "boto3==1.35.54",
+    "structlog==24.4.0",
+    "pyjwt[crypto]==2.9.0",
+    "uvicorn[standard]==0.32.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==8.3.3",
+    "pytest-asyncio==0.24.0",
+    "pytest-cov==6.0.0",
+    "httpx==0.27.2",
+    "ruff==0.7.2",
+    "import-linter==2.1",
+    "schemathesis==3.38.0",
+]
+
+[tool.uv]
+package = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["libs/threadit_core/threadit_core"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "--cov=threadit_core --cov-report=term-missing"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S", "A", "C4"]
+# S101 (assert) allowed in tests only
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+
+# import-linter: no AWS type crosses the repository boundary (R5)
+[tool.importlinter]
+root_packages = ["threadit_core"]
+
+[[tool.importlinter.contracts]]
+name = "Domain and use-cases must not import boto3"
+type = "forbidden"
+source_modules = [
+    "threadit_core.domain",
+    "threadit_core.services",
+    "threadit_core.repositories.ports",
+]
+forbidden_modules = ["boto3", "botocore"]
