@@ -69,10 +69,9 @@ module "apigw" {
   cognito_audience = module.cognito.app_client_id
 }
 
-resource "aws_wafv2_web_acl_association" "api" {
-  resource_arn = module.apigw.api_arn
-  web_acl_arn  = module.waf.web_acl_arn
-}
+# NOTE: WAFv2 cannot associate to API Gateway v2 (HTTP API). P1 volumetric limiting is
+# API Gateway stage throttling (see apigw module). The WAF ACL is retained for the
+# CloudFront front added in P2 (FLOCI/ADR-008).
 
 module "network" {
   source      = "./modules/network"

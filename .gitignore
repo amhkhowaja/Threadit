@@ -221,3 +221,9 @@ __marimo__/
 
 # Floci emulator local state
 .floci-data/
+
+# Terraform state & local
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl

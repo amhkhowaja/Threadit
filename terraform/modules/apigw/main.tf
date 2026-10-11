@@ -76,6 +76,13 @@ resource "aws_apigatewayv2_stage" "v1" {
   api_id      = aws_apigatewayv2_api.http.id
   name        = "$default"
   auto_deploy = true
+
+  # Volumetric limiting for HTTP APIs is done via built-in stage throttling
+  # (WAFv2 cannot associate to API Gateway v2 / HTTP APIs; that path needs CloudFront in P2).
+  default_route_settings {
+    throttling_rate_limit  = 2000
+    throttling_burst_limit = 1000
+  }
 }
 
 output "api_endpoint" {

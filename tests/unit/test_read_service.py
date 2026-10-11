@@ -62,16 +62,37 @@ def test_list_by_user_filters():
 def test_comment_tree_vs_subtree():
     svc = _svc()
     top = Comment(
-        comment_id="c1", post_id="p1", user_id="u1", text="t", created_at=NOW,
-        depth=0, path="ts#c1", root_comment_id="c1", parent_id=None,
+        comment_id="c1",
+        post_id="p1",
+        user_id="u1",
+        text="t",
+        created_at=NOW,
+        depth=0,
+        path="ts#c1",
+        root_comment_id="c1",
+        parent_id=None,
     )
     child = Comment(
-        comment_id="c2", post_id="p1", user_id="u1", text="r", created_at=NOW,
-        depth=1, path="ts#c1#ts#c2", root_comment_id="c1", parent_id="c1",
+        comment_id="c2",
+        post_id="p1",
+        user_id="u1",
+        text="r",
+        created_at=NOW,
+        depth=1,
+        path="ts#c1#ts#c2",
+        root_comment_id="c1",
+        parent_id="c1",
     )
     other = Comment(
-        comment_id="c3", post_id="p1", user_id="u1", text="o", created_at=NOW,
-        depth=0, path="ts#c3", root_comment_id="c3", parent_id=None,
+        comment_id="c3",
+        post_id="p1",
+        user_id="u1",
+        text="o",
+        created_at=NOW,
+        depth=0,
+        path="ts#c3",
+        root_comment_id="c3",
+        parent_id=None,
     )
     for c in (top, child, other):
         svc.comments.put_comment(c)

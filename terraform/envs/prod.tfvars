@@ -6,3 +6,4 @@ ddb_billing_mode  = "PAY_PER_REQUEST"
 enable_dax        = true
 enable_cloudfront = true
 enable_xray       = true
+enable_ecs        = false
