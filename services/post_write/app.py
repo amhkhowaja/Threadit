@@ -8,6 +8,8 @@ from threadit_core.api.dtos import (
     CreateCommentRequest,
     CreatePostRequest,
     PostResponse,
+    PresignRequest,
+    PresignResponse,
 )
 from threadit_core.api.errors import install_error_handling
 from threadit_core.api.identity import require_idempotency_key, require_user_id
@@ -19,6 +21,8 @@ from threadit_core.repositories.dynamodb import (
     build_table,
 )
 from threadit_core.repositories.keys import MaterializedPathBuilder
+from threadit_core.repositories.s3_presigner import S3AttachmentPresigner, build_s3_client
+from threadit_core.services.attachment_service import AttachmentService
 from threadit_core.services.write_service import WriteService
 
 
@@ -44,11 +48,33 @@ async def lifespan(app: FastAPI):
     settings = load_settings()
     configure_logging(settings.log_level)
     app.state.write_service = build_write_service(settings)
+    if settings.attachments_bucket:
+        s3 = build_s3_client(region=settings.aws_region, endpoint_url=settings.aws_endpoint_url)
+        app.state.attachment_service = AttachmentService(
+            presigner=S3AttachmentPresigner(s3, settings.attachments_bucket),
+            max_bytes=settings.max_attachment_bytes,
+        )
+    else:
+        app.state.attachment_service = None
     yield
 
 
 def get_service(request) -> WriteService:
     return request.app.state.write_service
+
+
+def get_attachment_service(request):
+    svc = request.app.state.attachment_service
+    if svc is None:
+        from threadit_core.domain.errors import DomainError
+
+        class _Unavailable(DomainError):
+            status = 503
+            error_type = "https://threadit/errors/attachments-unavailable"
+            title = "Attachments not configured"
+
+        raise _Unavailable("attachments bucket not configured")
+    return svc
 
 
 def create_app() -> FastAPI:
@@ -89,6 +115,22 @@ def create_app() -> FastAPI:
             idempotency_key=idem,
         )
         return CommentResponse.of(comment)
+
+    @app.post("/v1/posts/{post_id}/attachments:presign")
+    async def presign_attachment(
+        post_id: str,
+        body: PresignRequest,
+        request: Request,
+        user_id: str = Depends(require_user_id),
+    ) -> PresignResponse:
+        svc = get_attachment_service(request)
+        out = svc.presign(
+            user_id=user_id,
+            post_id=post_id,
+            content_type=body.contentType,
+            size_bytes=body.sizeBytes,
+        )
+        return PresignResponse(url=out.url, objectKey=out.object_key, expiresIn=out.expires_in)
 
     return app
 

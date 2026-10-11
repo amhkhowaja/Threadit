@@ -189,6 +189,51 @@
         "title": "PostResponse",
         "type": "object"
       },
+      "PresignRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "contentType": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Contenttype",
+            "type": "string"
+          },
+          "sizeBytes": {
+            "exclusiveMinimum": 0.0,
+            "title": "Sizebytes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "contentType",
+          "sizeBytes"
+        ],
+        "title": "PresignRequest",
+        "type": "object"
+      },
+      "PresignResponse": {
+        "properties": {
+          "expiresIn": {
+            "title": "Expiresin",
+            "type": "integer"
+          },
+          "objectKey": {
+            "title": "Objectkey",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "objectKey",
+          "expiresIn"
+        ],
+        "title": "PresignResponse",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -434,6 +479,55 @@
           }
         },
         "summary": "Get Post"
+      }
+    },
+    "/v1/posts/{post_id}/attachments:presign": {
+      "post": {
+        "operationId": "presign_attachment_v1_posts__post_id__attachments_presign_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "post_id",
+            "required": true,
+            "schema": {
+              "title": "Post Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PresignRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresignResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Presign Attachment"
       }
     },
     "/v1/posts/{post_id}/comments": {

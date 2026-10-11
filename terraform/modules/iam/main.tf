@@ -1,5 +1,13 @@
 variable "name_prefix" { type = string }
 variable "table_arn" { type = string }
+variable "images_bucket_arn" {
+  type    = string
+  default = ""
+}
+variable "enable_images" {
+  type    = bool
+  default = true
+}
 
 data "aws_iam_policy_document" "ecs_assume" {
   statement {
@@ -41,6 +49,22 @@ resource "aws_iam_role_policy" "write" {
   name   = "ddb-write"
   role   = aws_iam_role.write.id
   policy = data.aws_iam_policy_document.write.json
+}
+
+# S3 image upload (presign) — only PutObject on the image bucket (least privilege).
+data "aws_iam_policy_document" "write_s3" {
+  count = var.enable_images ? 1 : 0
+  statement {
+    actions   = ["s3:PutObject"]
+    resources = ["${var.images_bucket_arn}/*"]
+  }
+}
+
+resource "aws_iam_role_policy" "write_s3" {
+  count  = var.enable_images ? 1 : 0
+  name   = "s3-images-write"
+  role   = aws_iam_role.write.id
+  policy = data.aws_iam_policy_document.write_s3[0].json
 }
 
 resource "aws_iam_role_policy" "read" {

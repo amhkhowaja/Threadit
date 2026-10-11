@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     # Idempotency sentinel TTL (I8).
     idempotency_ttl_seconds: int = Field(default=86_400)
 
+    # Attachments (P2). Empty bucket name -> endpoint returns 503 (not configured).
+    attachments_bucket: str = Field(default="")
+    max_attachment_bytes: int = Field(default=5 * 1024 * 1024)
+
 
 def load_settings() -> Settings:
     return Settings()

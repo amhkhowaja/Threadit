@@ -69,3 +69,15 @@ class PageResponse(BaseModel):
     items: list
     nextCursor: str | None
     limit: int
+
+
+class PresignRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    contentType: str = Field(min_length=1, max_length=128)
+    sizeBytes: int = Field(gt=0)
+
+
+class PresignResponse(BaseModel):
+    url: str
+    objectKey: str
+    expiresIn: int

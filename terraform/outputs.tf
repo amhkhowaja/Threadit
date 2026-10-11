@@ -19,3 +19,6 @@ output "write_role_arn" {
 output "read_role_arn" {
   value = module.iam.read_role_arn
 }
+output "images_bucket" {
+  value = module.s3_images.bucket_name
+}

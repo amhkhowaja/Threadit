@@ -52,9 +52,16 @@ module "cognito" {
 }
 
 module "iam" {
-  source      = "./modules/iam"
-  name_prefix = var.name_prefix
-  table_arn   = module.dynamodb.table_arn
+  source            = "./modules/iam"
+  name_prefix       = var.name_prefix
+  table_arn         = module.dynamodb.table_arn
+  images_bucket_arn = module.s3_images.bucket_arn
+}
+
+module "s3_images" {
+  source            = "./modules/s3_images"
+  name_prefix       = var.name_prefix
+  enable_cloudfront = var.enable_cloudfront
 }
 
 module "waf" {
