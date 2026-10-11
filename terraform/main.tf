@@ -121,13 +121,15 @@ module "cloudfront" {
 }
 
 module "loadgen" {
-  count       = var.enable_loadgen ? 1 : 0
-  source      = "./modules/loadgen"
-  name_prefix = var.name_prefix
-  table_arn   = module.dynamodb.table_arn
-  table_name  = module.dynamodb.table_name
-  region      = var.region
-  source_dir  = var.loadgen_build_dir
+  count             = var.enable_loadgen ? 1 : 0
+  source            = "./modules/loadgen"
+  name_prefix       = var.name_prefix
+  table_arn         = module.dynamodb.table_arn
+  table_name        = module.dynamodb.table_name
+  region            = var.region
+  source_dir        = var.loadgen_build_dir
+  subnet_ids        = module.network.private_subnet_ids
+  security_group_id = module.network.lambda_security_group_id
 }
 
 module "waf" {

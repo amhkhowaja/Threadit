@@ -23,11 +23,37 @@ resource "aws_subnet" "private" {
   tags              = { Name = "${var.name_prefix}-private-${count.index}" }
 }
 
-# Gateway VPC endpoint keeps DynamoDB traffic off NAT (cost control R4).
+# Gateway VPC endpoint keeps DynamoDB traffic off NAT (cost control R4) and gives
+# in-VPC callers the private, low-latency path to DynamoDB.
+resource "aws_route_table" "private" {
+  vpc_id = aws_vpc.main.id
+  tags   = { Name = "${var.name_prefix}-private-rt" }
+}
+
+resource "aws_route_table_association" "private" {
+  count          = 2
+  subnet_id      = aws_subnet.private[count.index].id
+  route_table_id = aws_route_table.private.id
+}
+
 resource "aws_vpc_endpoint" "dynamodb" {
   vpc_id            = aws_vpc.main.id
   service_name      = "com.amazonaws.${data.aws_region.current.region}.dynamodb"
   vpc_endpoint_type = "Gateway"
+  route_table_ids   = [aws_route_table.private.id]
+}
+
+# Security group for in-VPC Lambdas (egress only; DynamoDB via gateway endpoint).
+resource "aws_security_group" "lambda" {
+  name   = "${var.name_prefix}-lambda-sg"
+  vpc_id = aws_vpc.main.id
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  tags = { Name = "${var.name_prefix}-lambda-sg" }
 }
 
 data "aws_region" "current" {}
@@ -37,4 +63,7 @@ output "vpc_id" {
 }
 output "private_subnet_ids" {
   value = aws_subnet.private[*].id
+}
+output "lambda_security_group_id" {
+  value = aws_security_group.lambda.id
 }

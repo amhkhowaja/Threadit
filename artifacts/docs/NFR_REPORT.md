@@ -49,3 +49,29 @@ In a **real deployment**, the Fargate services run **inside `us-east-1`** and re
 
 ## Recommendation
 For production SLO sign-off, run this same harness from a **Fargate task inside the VPC** against the deployed API Gateway endpoint (bounded, short) — that yields representative latency/throughput. The correctness, consistency, search-freshness, availability, and rate-limiting results here already hold.
+
+---
+
+## Addendum — Real in-region DynamoDB latency (in-VPC probe, eu-central-1)
+
+To close the "latency is a topology artifact" gap, an **in-VPC Lambda** (`services/loadgen`, `module.loadgen`) was deployed in **eu-central-1** (Frankfurt — closest region to the Budapest developer) into the private subnets, reaching DynamoDB over the **VPC gateway endpoint** (private path). It measures raw `GetItem` latency from *inside* the region — no laptop WAN hop.
+
+### The measurement journey (honest)
+
+| Measurement context | p50 | p99 | What it actually reflects |
+|---------------------|-----|-----|---------------------------|
+| Laptop (Budapest) → us-east-1 (NFR harness) | ~2800 ms | ~4400 ms | transcontinental WAN RTT × several calls/request |
+| In-VPC Lambda @ **128 MB** | ~40 ms | ~40 ms | **CPU starvation** — 128 MB ≈ 1/12 vCPU; the flat ~40 ms is boto3/TLS/JSON client CPU time, **not** DynamoDB |
+| **In-VPC Lambda @ 512 MB** | **5.1 ms** | **15.0 ms** | **real in-region DynamoDB** (min 4.5 ms) ✅ |
+
+### Result
+At adequate CPU (512 MB — the account's current Lambda memory cap), in-region `GetItem` latency through the private gateway endpoint is **p50 5.1 ms, p95 13.4 ms, p99 15.0 ms, min 4.5 ms** (500 iterations, warm). This is **~10× inside the read SLO (≤150 ms p99)**.
+
+### Conclusions
+- The alarming laptop latency (seconds) was **two stacked artifacts**, never the system: first transcontinental WAN, then (in the probe) Lambda CPU starvation at 128 MB. Real DynamoDB in-region is single-digit-ms as expected.
+- **Region matters for your dev experience** (Budapest→Frankfurt ~20 ms vs →Virginia ~110 ms RTT), but the production SLO is met regardless because the services run *inside* the region.
+- **Right-size Lambda memory**: the 128 MB→512 MB jump (8× latency improvement) shows memory=CPU on Lambda; client-side AWS SDK work is CPU-bound. Applies to the indexer and any request Lambda.
+- The account has a **512 MB Lambda memory ceiling** (new-account default) — worth a quota increase before heavier compute.
+
+### Caveat
+This probes DynamoDB in isolation (the dominant read dependency). End-to-end API p99 adds the service's own handler time + API Gateway hop; a full in-VPC Fargate load test against API Gateway remains the final SLO sign-off step. But the core data-plane latency question is now answered with real numbers.
