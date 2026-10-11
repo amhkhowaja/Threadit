@@ -193,6 +193,7 @@ Set `FLOCI_STORAGE_MODE=persistent` (or `hybrid`/`wal`) and bind-mount `./data:/
 | F7 | **Fargate ≠ local Docker** | ECS tasks run on local Docker, not managed Fargate (networking/metadata differ) | Prod/staging run real Fargate; parity validated in staging smoke tests. |
 | F8 | **Version drift** | Floci releases 1st & 3rd Tuesday; behavior can change | **Pin the Floci image** (`floci/floci:x.y.z`) in dev compose and CI; upgrade deliberately. |
 | F9 | **False confidence** | "It worked on Floci" ≠ prod-correct | Policy: no feature is "done" until its exit criteria pass in **real-AWS staging** (PLANNING exit criteria). Floci accelerates the inner loop; staging is the source of truth. |
+| F10 | **WAFv2 ↔ API Gateway v2 (CONFIRMED on real AWS)** | Floci **accepted** `aws_wafv2_web_acl_association` to an HTTP API; **real AWS rejected it** (`WAFInvalidParameterException`) — WAFv2 associates only to ALB / API GW **REST** / AppSync / Cognito, **not HTTP APIs**. Classic F2 false-positive. | **Fixed:** removed the association; P1 volumetric limiting = **API Gateway stage throttling** (rate/burst on `$default`). WAF ACL retained for the **CloudFront** front in P2. Verified: control plane deploys clean on real AWS without the association. |
 
 ---
 
@@ -254,6 +255,26 @@ Prod is identical commands with `-var-file=envs/prod.tfvars` and no `endpoints{}
 - **[DP-F2]** Pin a specific Floci version for the team (§5 F8). *Recommendation: pin and upgrade on a schedule.*
 - **[DP-F3]** Confirm the `[VERIFY]` operation-level items in §2 against the Floci Services Overview for the pinned version (PITR, API-GW usage-plan enforcement, Cognito token claim shape, KMS envelope edge cases) before P1 exit.
 - **[DP-F4]** Whether to attempt any CloudFront/WAF behavior in a thin real-AWS "staging-lite" earlier than P2 to de-risk F2.
+
+---
+
+## 8a. Real-AWS deployer IAM policy requirements
+
+The deploy IAM user (e.g. `threadit-deployer`) needs these action groups for a clean P1 `terraform apply`/`destroy` on real AWS: `dynamodb:*`, `cognito-idp:*`, `apigateway:*` (HTTP APIs authorize under `apigateway`, **not** `apigatewayv2`), `wafv2:*`, `ec2:*`, `ecs:*`, `logs:*`, `application-autoscaling:*`, and IAM role management (`CreateRole/DeleteRole/GetRole/PassRole/TagRole/UntagRole/ListRoles/PutRolePolicy/DeleteRolePolicy/GetRolePolicy/AttachRolePolicy/DetachRolePolicy/ListRolePolicies/ListAttachedRolePolicies`).
+
+**Also required for a clean Terraform *destroy*** (the AWS provider calls these during role deletion / verification), learned from the real-AWS run:
+- `iam:ListInstanceProfilesForRole` — the provider calls this before deleting a role; without it, role deletion fails and roles must be cleaned up manually.
+- `iam:SimulatePrincipalPolicy` (optional) — only if you want to run live least-privilege simulations as F1 evidence.
+
+## 8b. Real-AWS verification record (P1)
+
+Deployed the P1 control plane to real AWS (account `453168420187`, `us-east-1`), verified, and destroyed. Confirmed:
+- DynamoDB `threadit`: ACTIVE, Streams `NEW_AND_OLD_IMAGES`, SSE ENABLED, GSI1+GSI2.
+- API Gateway: `POST` routes = JWT (Cognito authorizer), `GET` routes = public — correct FR6/D6 split.
+- **F1 (Floci cannot prove):** read role scoped to `Query`/`GetItem`, write role to `PutItem`/`UpdateItem` — least-privilege confirmed from the live inline policy documents.
+- API Gateway stage throttling live (rate 2000 / burst 1000).
+- **F10 fix validated:** control plane applies clean without the (invalid) WAF→HTTP-API association.
+- Teardown confirmed the account clean across all services.
 
 ---
 
