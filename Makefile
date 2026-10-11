@@ -48,6 +48,20 @@ openapi: ## Regenerate the authoritative openapi/v1.json from the apps
 .PHONY: check
 check: lint test ## Lint + test (CI gate)
 
+.PHONY: floci-up
+floci-up: ## Start the pinned Floci emulator (dev AWS)
+	docker compose up -d
+
+.PHONY: floci-down
+floci-down: ## Stop Floci
+	docker compose down
+
+.PHONY: itest
+itest: ## Integration tests against Floci (requires floci-up)
+	AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test \
+	THREADIT_AWS_ENDPOINT_URL=http://localhost:4566 \
+	$(PY) -m pytest tests/integration -q
+
 .PHONY: clean
 clean: ## Remove caches
 	find . -type d -name __pycache__ -prune -exec rm -rf {} + 2>/dev/null || true

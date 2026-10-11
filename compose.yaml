@@ -1,0 +1,11 @@
+services:
+  floci:
+    image: floci/floci:2.2.0
+    ports:
+      - "4566:4566"
+    environment:
+      - FLOCI_STORAGE_MODE=persistent
+      - FLOCI_HOSTNAME=floci
+    volumes:
+      - ./.floci-data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock

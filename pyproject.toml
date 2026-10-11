@@ -38,6 +38,7 @@ packages = ["libs/threadit_core/threadit_core"]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 addopts = "--cov=threadit_core --cov-report=term-missing"
+markers = ["integration: tests that require a running Floci/DynamoDB"]
 
 [tool.ruff]
 line-length = 100
