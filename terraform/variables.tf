@@ -44,3 +44,14 @@ variable "enable_xray" {
   type    = bool
   default = true
 }
+
+variable "enable_ecs" {
+  type        = bool
+  default     = true
+  description = "Provision ECS services (requires a built image)."
+}
+
+variable "service_image" {
+  type    = string
+  default = "threadit:local"
+}

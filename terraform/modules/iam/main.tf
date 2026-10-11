@@ -49,9 +49,23 @@ resource "aws_iam_role_policy" "read" {
   policy = data.aws_iam_policy_document.read.json
 }
 
+# ECS task execution role (pull image, write logs).
+resource "aws_iam_role" "execution" {
+  name               = "${var.name_prefix}-exec"
+  assume_role_policy = data.aws_iam_policy_document.ecs_assume.json
+}
+
+resource "aws_iam_role_policy_attachment" "execution" {
+  role       = aws_iam_role.execution.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
 output "write_role_arn" {
   value = aws_iam_role.write.arn
 }
 output "read_role_arn" {
   value = aws_iam_role.read.arn
+}
+output "execution_role_arn" {
+  value = aws_iam_role.execution.arn
 }

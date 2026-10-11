@@ -29,13 +29,13 @@ install: $(VENV) ## Install runtime + dev dependencies
 
 .PHONY: lint
 lint: ## Run ruff + the no-boto3-past-repository-boundary contract (R5)
-	$(VENV)/bin/ruff check libs services tests
+	$(VENV)/bin/ruff check libs services tools tests
 	$(VENV)/bin/lint-imports
 
 .PHONY: fmt
 fmt: ## Auto-format / auto-fix lint issues
-	$(VENV)/bin/ruff check --fix libs services tests
-	$(VENV)/bin/ruff format libs services tests
+	$(VENV)/bin/ruff check --fix libs services tools tests
+	$(VENV)/bin/ruff format libs services tools tests
 
 .PHONY: test
 test: ## Run unit + api + contract tests (no AWS)
@@ -61,6 +61,29 @@ itest: ## Integration tests against Floci (requires floci-up)
 	AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test \
 	THREADIT_AWS_ENDPOINT_URL=http://localhost:4566 \
 	$(PY) -m pytest tests/integration -q
+
+TF_DIR := terraform
+ENV ?= dev
+
+.PHONY: tf-plan
+tf-plan: ## terraform plan (ENV=dev|prod)
+	cd $(TF_DIR) && terraform init -input=false >/dev/null && \
+	terraform plan -input=false -var-file=envs/$(ENV).tfvars
+
+.PHONY: tf-apply
+tf-apply: ## terraform apply (ENV=dev=Floci | prod=real AWS)
+	cd $(TF_DIR) && terraform init -input=false >/dev/null && \
+	terraform apply -input=false -auto-approve -var-file=envs/$(ENV).tfvars
+
+.PHONY: tf-destroy
+tf-destroy: ## terraform destroy (ENV=dev|prod)
+	cd $(TF_DIR) && terraform destroy -input=false -auto-approve -var-file=envs/$(ENV).tfvars
+
+.PHONY: smoke
+smoke: ## End-to-end smoke against the Floci-provisioned stack (requires tf-apply ENV=dev)
+	AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test \
+	THREADIT_AWS_ENDPOINT_URL=http://localhost:4566 \
+	$(PY) tools/smoke.py
 
 .PHONY: clean
 clean: ## Remove caches

@@ -73,3 +73,22 @@ resource "aws_wafv2_web_acl_association" "api" {
   resource_arn = module.apigw.api_arn
   web_acl_arn  = module.waf.web_acl_arn
 }
+
+module "network" {
+  source      = "./modules/network"
+  name_prefix = var.name_prefix
+}
+
+module "ecs" {
+  count              = var.enable_ecs ? 1 : 0
+  source             = "./modules/ecs"
+  name_prefix        = var.name_prefix
+  image              = var.service_image
+  table_name         = module.dynamodb.table_name
+  aws_endpoint_url   = var.use_floci ? var.floci_endpoint : ""
+  region             = var.region
+  write_role_arn     = module.iam.write_role_arn
+  read_role_arn      = module.iam.read_role_arn
+  execution_role_arn = module.iam.execution_role_arn
+  subnet_ids         = module.network.private_subnet_ids
+}
