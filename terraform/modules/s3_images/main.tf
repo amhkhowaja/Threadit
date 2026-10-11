@@ -47,3 +47,9 @@ output "bucket_name" {
 output "bucket_arn" {
   value = aws_s3_bucket.images.arn
 }
+output "bucket_regional_domain" {
+  value = aws_s3_bucket.images.bucket_regional_domain_name
+}
+output "oac_id" {
+  value = var.enable_cloudfront ? aws_cloudfront_origin_access_control.images[0].id : ""
+}

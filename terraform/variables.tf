@@ -62,6 +62,12 @@ variable "enable_search" {
   description = "Provision OpenSearch domain + Streams->Lambda indexer."
 }
 
+variable "enable_elasticache" {
+  type        = bool
+  default     = true
+  description = "Provision ElastiCache (counters + rate-limit state)."
+}
+
 variable "lambda_build_dir" {
   type        = string
   default     = "../build/lambda"

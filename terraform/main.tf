@@ -42,6 +42,9 @@ provider "aws" {
       sqs            = var.floci_endpoint
       opensearch     = var.floci_endpoint
       lambda         = var.floci_endpoint
+      elasticache    = var.floci_endpoint
+      cloudfront     = var.floci_endpoint
+      dax            = var.floci_endpoint
     }
   }
 }
@@ -84,6 +87,29 @@ module "indexer" {
   stream_arn          = module.dynamodb.stream_arn
   opensearch_endpoint = module.opensearch[0].endpoint
   source_dir          = var.lambda_build_dir
+}
+
+module "dax" {
+  count       = var.enable_dax ? 1 : 0
+  source      = "./modules/dax"
+  name_prefix = var.name_prefix
+  subnet_ids  = module.network.private_subnet_ids
+  table_arn   = module.dynamodb.table_arn
+}
+
+module "elasticache" {
+  count       = var.enable_elasticache ? 1 : 0
+  source      = "./modules/elasticache"
+  name_prefix = var.name_prefix
+  subnet_ids  = module.network.private_subnet_ids
+}
+
+module "cloudfront" {
+  count                         = var.enable_cloudfront ? 1 : 0
+  source                        = "./modules/cloudfront"
+  name_prefix                   = var.name_prefix
+  images_bucket_regional_domain = module.s3_images.bucket_regional_domain
+  oac_id                        = module.s3_images.oac_id
 }
 
 module "waf" {
