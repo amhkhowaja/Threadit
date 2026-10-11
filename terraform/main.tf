@@ -56,6 +56,8 @@ module "dynamodb" {
   enable_pitr  = !var.use_floci # PITR acceptance on Floci is [VERIFY] (FLOCI doc)
 }
 
+data "aws_caller_identity" "current" {}
+
 module "cognito" {
   source    = "./modules/cognito"
   pool_name = "${var.name_prefix}-users"
@@ -78,6 +80,10 @@ module "opensearch" {
   count       = var.enable_search ? 1 : 0
   source      = "./modules/opensearch"
   name_prefix = var.name_prefix
+  access_role_arns = [
+    "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.name_prefix}-indexer",
+    module.iam.read_role_arn,
+  ]
 }
 
 module "indexer" {
@@ -86,6 +92,8 @@ module "indexer" {
   name_prefix         = var.name_prefix
   stream_arn          = module.dynamodb.stream_arn
   opensearch_endpoint = module.opensearch[0].endpoint
+  opensearch_sign     = !var.use_floci
+  region              = var.region
   source_dir          = var.lambda_build_dir
 }
 
@@ -110,6 +118,16 @@ module "cloudfront" {
   name_prefix                   = var.name_prefix
   images_bucket_regional_domain = module.s3_images.bucket_regional_domain
   oac_id                        = module.s3_images.oac_id
+}
+
+module "loadgen" {
+  count       = var.enable_loadgen ? 1 : 0
+  source      = "./modules/loadgen"
+  name_prefix = var.name_prefix
+  table_arn   = module.dynamodb.table_arn
+  table_name  = module.dynamodb.table_name
+  region      = var.region
+  source_dir  = var.loadgen_build_dir
 }
 
 module "waf" {

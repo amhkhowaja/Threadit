@@ -20,7 +20,15 @@ def build_read_service(settings) -> ReadService:
         endpoint_url=settings.aws_endpoint_url,
     )
     repo = DynamoDBRepository(table)
-    search = OpenSearchIndex(settings.opensearch_endpoint) if settings.opensearch_endpoint else None
+    search = (
+        OpenSearchIndex(
+            settings.opensearch_endpoint,
+            sign=settings.opensearch_sign,
+            region=settings.aws_region,
+        )
+        if settings.opensearch_endpoint
+        else None
+    )
     return ReadService(
         posts=repo,
         comments=repo,

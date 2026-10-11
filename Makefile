@@ -53,6 +53,12 @@ build-lambda: ## Assemble the indexer Lambda package (handler + core + deps)
 	touch build/lambda/services/__init__.py
 	$(PIP) install -q --target build/lambda urllib3==2.2.3 structlog==24.4.0
 
+.PHONY: build-loadgen
+build-loadgen: ## Assemble the in-VPC loadgen Lambda package
+	rm -rf build/loadgen && mkdir -p build/loadgen/services/loadgen
+	cp services/loadgen/handler.py services/loadgen/__init__.py build/loadgen/services/loadgen/
+	touch build/loadgen/services/__init__.py
+
 .PHONY: check
 check: lint test ## Lint + test (CI gate)
 

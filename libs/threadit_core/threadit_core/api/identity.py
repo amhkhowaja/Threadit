@@ -12,12 +12,7 @@ def require_user_id(request: Request) -> str:
     In local/dev without the gateway, fall back to the x-user-id header (Floci only).
     """
     scope = request.scope.get("aws.event", {})
-    claims = (
-        scope.get("requestContext", {})
-        .get("authorizer", {})
-        .get("jwt", {})
-        .get("claims", {})
-    )
+    claims = scope.get("requestContext", {}).get("authorizer", {}).get("jwt", {}).get("claims", {})
     sub = claims.get("sub") or request.headers.get("x-user-id")
     if not sub:
         raise HTTPException(status_code=401, detail="missing identity")

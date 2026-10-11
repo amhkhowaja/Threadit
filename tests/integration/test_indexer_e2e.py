@@ -5,10 +5,10 @@ import uuid
 
 import pytest
 import urllib3
-
-from tests.integration.test_opensearch import _os_endpoint
 from threadit_core.repositories.opensearch import OpenSearchIndex
 from threadit_core.services.stream_indexer import StreamIndexer
+
+from tests.integration.test_opensearch import _os_endpoint
 
 pytestmark = pytest.mark.integration
 

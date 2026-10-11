@@ -227,3 +227,7 @@ __marimo__/
 *.tfstate.*
 .terraform/
 .terraform.lock.hcl
+
+# Terraform-generated lambda build artifacts
+terraform/modules/*/.build/
+build/lambda/

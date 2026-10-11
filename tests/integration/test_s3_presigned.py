@@ -6,7 +6,6 @@ import uuid
 import boto3
 import pytest
 import urllib3
-
 from threadit_core.repositories.s3_presigner import S3AttachmentPresigner
 from threadit_core.services.attachment_service import AttachmentService
 

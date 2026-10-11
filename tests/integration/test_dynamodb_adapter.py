@@ -34,13 +34,26 @@ def test_idempotency_claim_then_replay(table):
 def test_threaded_comment_tree_in_order(table):
     repo = DynamoDBRepository(table)
     top = Comment(
-        comment_id="c1", post_id="p1", user_id="u1", text="top", created_at=NOW,
-        depth=0, path="20260102T030405000000Z#c1", root_comment_id="c1", parent_id=None,
+        comment_id="c1",
+        post_id="p1",
+        user_id="u1",
+        text="top",
+        created_at=NOW,
+        depth=0,
+        path="20260102T030405000000Z#c1",
+        root_comment_id="c1",
+        parent_id=None,
     )
     child = Comment(
-        comment_id="c2", post_id="p1", user_id="u1", text="reply", created_at=NOW,
-        depth=1, path="20260102T030405000000Z#c1#20260102T030406000000Z#c2",
-        root_comment_id="c1", parent_id="c1",
+        comment_id="c2",
+        post_id="p1",
+        user_id="u1",
+        text="reply",
+        created_at=NOW,
+        depth=1,
+        path="20260102T030405000000Z#c1#20260102T030406000000Z#c2",
+        root_comment_id="c1",
+        parent_id="c1",
     )
     repo.put_comment(top)
     repo.put_comment(child)

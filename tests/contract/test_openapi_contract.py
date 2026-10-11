@@ -11,9 +11,7 @@ _SPEC = Path(__file__).resolve().parents[2] / "openapi" / "v1.json"
 def test_committed_spec_matches_generated():
     committed = json.loads(_SPEC.read_text())
     generated = json.loads(json.dumps(build_spec(), sort_keys=True))
-    assert generated == committed, (
-        "OpenAPI drift: run `make openapi` and commit openapi/v1.json"
-    )
+    assert generated == committed, "OpenAPI drift: run `make openapi` and commit openapi/v1.json"
 
 
 def test_contract_has_all_v1_endpoints():

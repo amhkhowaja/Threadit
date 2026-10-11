@@ -86,9 +86,7 @@ class DynamoDBRepository(
         return ItemMapper.item_to_comment(items[0]) if items else None
 
     def get_comment_tree(self, post_id: str, *, limit: int, cursor: str | None) -> Page:
-        return self._query_comments(
-            post_id, KeyFactory.comment_tree_prefix(), limit, cursor
-        )
+        return self._query_comments(post_id, KeyFactory.comment_tree_prefix(), limit, cursor)
 
     def get_comment_subtree(
         self, post_id: str, root_comment_id: str, *, limit: int, cursor: str | None

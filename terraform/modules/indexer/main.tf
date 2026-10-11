@@ -2,6 +2,14 @@ variable "name_prefix" { type = string }
 variable "stream_arn" { type = string }
 variable "opensearch_endpoint" { type = string }
 variable "source_dir" { type = string }
+variable "opensearch_sign" {
+  type    = bool
+  default = true
+}
+variable "region" {
+  type    = string
+  default = "us-east-1"
+}
 
 data "archive_file" "indexer" {
   type        = "zip"
@@ -64,6 +72,8 @@ resource "aws_lambda_function" "indexer" {
   environment {
     variables = {
       THREADIT_OPENSEARCH_ENDPOINT = var.opensearch_endpoint
+      THREADIT_OPENSEARCH_SIGN     = var.opensearch_sign ? "true" : "false"
+      THREADIT_AWS_REGION          = var.region
     }
   }
 }

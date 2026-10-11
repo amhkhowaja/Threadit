@@ -16,20 +16,46 @@ _INDEX = "posts"
 
 
 class OpenSearchIndex(SearchIndex):
-    """Thin OpenSearch REST adapter (urllib3). Documents keyed by postId for idempotency."""
+    """Thin OpenSearch REST adapter (urllib3). Documents keyed by postId for idempotency.
 
-    def __init__(self, endpoint: str, *, http: urllib3.PoolManager | None = None) -> None:
+    On real AWS, requests must be SigV4-signed (service "es"); on Floci they are unsigned.
+    Signing is enabled via `sign=True` + region (config-driven, F11).
+    """
+
+    def __init__(
+        self,
+        endpoint: str,
+        *,
+        http: urllib3.PoolManager | None = None,
+        sign: bool = False,
+        region: str = "us-east-1",
+    ) -> None:
         self._base = endpoint.rstrip("/")
         self._http = http or urllib3.PoolManager()
         self._ensured = False
+        self._sign = sign
+        self._region = region
+        self._signer = None
+        if sign:
+            import boto3
+            from botocore.auth import SigV4Auth
+
+            creds = boto3.Session().get_credentials()
+            self._signer = SigV4Auth(creds, "es", region)
+
+    def _send(self, method: str, url: str, body_bytes: bytes | None) -> urllib3.BaseHTTPResponse:
+        headers = {"Content-Type": "application/json"}
+        if self._signer is not None:
+            from botocore.awsrequest import AWSRequest
+
+            aws_req = AWSRequest(method=method, url=url, data=body_bytes, headers=dict(headers))
+            self._signer.add_auth(aws_req)
+            headers = dict(aws_req.headers)
+        return self._http.request(method, url, body=body_bytes, headers=headers)
 
     def _req(self, method: str, path: str, body: dict | None = None) -> dict:
-        resp = self._http.request(
-            method,
-            f"{self._base}{path}",
-            body=json.dumps(body).encode() if body is not None else None,
-            headers={"Content-Type": "application/json"},
-        )
+        body_bytes = json.dumps(body).encode() if body is not None else None
+        resp = self._send(method, f"{self._base}{path}", body_bytes)
         if resp.status >= 300 and resp.status != 404:
             raise RuntimeError(f"opensearch {method} {path} -> {resp.status}")
         return json.loads(resp.data) if resp.data else {}
@@ -48,11 +74,8 @@ class OpenSearchIndex(SearchIndex):
                 }
             }
         }
-        resp = self._http.request(
-            "PUT",
-            f"{self._base}/{_INDEX}",
-            body=json.dumps(mapping).encode(),
-            headers={"Content-Type": "application/json"},
+        resp = self._send(
+            "PUT", f"{self._base}/{_INDEX}", json.dumps(mapping).encode()
         )
         # 200 created, 400 already-exists (resource_already_exists_exception) are both fine.
         if resp.status not in (200, 400):

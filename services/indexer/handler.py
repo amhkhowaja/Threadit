@@ -9,7 +9,11 @@ from threadit_core.services.stream_indexer import StreamIndexer
 configure_logging(os.environ.get("THREADIT_LOG_LEVEL", "INFO"))
 _log = get_logger("indexer")
 
-_index = OpenSearchIndex(os.environ["THREADIT_OPENSEARCH_ENDPOINT"])
+_sign = os.environ.get("THREADIT_OPENSEARCH_SIGN", "false").lower() == "true"
+_region = os.environ.get("THREADIT_AWS_REGION", "us-east-1")
+_index = OpenSearchIndex(
+    os.environ["THREADIT_OPENSEARCH_ENDPOINT"], sign=_sign, region=_region
+)
 _indexer = StreamIndexer(_index)
 
 

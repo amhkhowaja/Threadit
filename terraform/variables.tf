@@ -73,3 +73,14 @@ variable "lambda_build_dir" {
   default     = "../build/lambda"
   description = "Pre-assembled Lambda package dir (handler + threadit_core + deps)."
 }
+
+variable "enable_loadgen" {
+  type        = bool
+  default     = false
+  description = "Provision the in-region DynamoDB latency-probe Lambda (perf testing)."
+}
+
+variable "loadgen_build_dir" {
+  type    = string
+  default = "../build/loadgen"
+}
