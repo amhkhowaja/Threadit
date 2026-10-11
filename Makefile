@@ -29,17 +29,17 @@ install: $(VENV) ## Install runtime + dev dependencies
 
 .PHONY: lint
 lint: ## Run ruff + the no-boto3-past-repository-boundary contract (R5)
-	$(VENV)/bin/ruff check libs tests
+	$(VENV)/bin/ruff check libs services tests
 	$(VENV)/bin/lint-imports
 
 .PHONY: fmt
 fmt: ## Auto-format / auto-fix lint issues
-	$(VENV)/bin/ruff check --fix libs tests
-	$(VENV)/bin/ruff format libs tests
+	$(VENV)/bin/ruff check --fix libs services tests
+	$(VENV)/bin/ruff format libs services tests
 
 .PHONY: test
-test: ## Run unit tests (no AWS)
-	$(PY) -m pytest tests/unit -q
+test: ## Run unit + api tests (no AWS)
+	$(PY) -m pytest tests/unit tests/api -q
 
 .PHONY: check
 check: lint test ## Lint + test (CI gate)
