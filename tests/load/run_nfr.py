@@ -196,7 +196,8 @@ async def main() -> int:
     await read_srv.start()
     report: dict = {"backend": backend, "users": USERS, "duration_s": DURATION}
     try:
-        async with httpx.AsyncClient(timeout=30) as client:
+        limits = httpx.Limits(max_connections=USERS * 2, max_keepalive_connections=USERS)
+        async with httpx.AsyncClient(timeout=30, limits=limits) as client:
             post_ids = await _seed_posts(client, max(5, USERS // 2))
             report["seeded_posts"] = len(post_ids)
             report["latency"] = await scenario_latency(client, post_ids)

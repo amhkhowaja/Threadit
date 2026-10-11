@@ -74,6 +74,8 @@ async def timed(stats: Stats, coro: Awaitable) -> object:
         status = resp.status_code
         ok = status < 400
         result = resp
+    except Exception:  # noqa: BLE001 - a transport error is a failed request, not a crash
+        status, ok = 599, False
     finally:
         stats.record((time.perf_counter() - start) * 1000, status, ok)
     return result
