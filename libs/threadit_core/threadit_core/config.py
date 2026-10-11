@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     attachments_bucket: str = Field(default="")
     max_attachment_bytes: int = Field(default=5 * 1024 * 1024)
 
+    # Search (P2). Empty endpoint -> search_keyword returns 501 (P1 behavior).
+    opensearch_endpoint: str = Field(default="")
+
 
 def load_settings() -> Settings:
     return Settings()

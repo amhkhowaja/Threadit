@@ -8,6 +8,8 @@ from threadit_core.api.errors import install_error_handling
 from threadit_core.config import load_settings
 from threadit_core.logging import configure_logging
 from threadit_core.repositories.dynamodb import DynamoDBRepository, build_table
+from threadit_core.repositories.opensearch import OpenSearchIndex
+from threadit_core.repositories.search_index import SearchHit
 from threadit_core.services.read_service import ReadService
 
 
@@ -18,11 +20,13 @@ def build_read_service(settings) -> ReadService:
         endpoint_url=settings.aws_endpoint_url,
     )
     repo = DynamoDBRepository(table)
+    search = OpenSearchIndex(settings.opensearch_endpoint) if settings.opensearch_endpoint else None
     return ReadService(
         posts=repo,
         comments=repo,
         default_limit=settings.default_page_limit,
         max_limit=settings.max_page_limit,
+        search=search,
     )
 
 
@@ -59,8 +63,12 @@ def create_app() -> FastAPI:
         page = svc.list_posts(
             user_id=user_id, search_keyword=search_keyword, limit=limit or last, cursor=cursor
         )
+        items = [
+            PostResponse.of_hit(p) if isinstance(p, SearchHit) else PostResponse.of(p)
+            for p in page.items
+        ]
         return PageResponse(
-            items=[PostResponse.of(p) for p in page.items],
+            items=items,
             nextCursor=page.next_cursor,
             limit=limit or last or svc.default_limit,
         )
@@ -83,9 +91,7 @@ def create_app() -> FastAPI:
         rootCommentId: str | None = Query(default=None),
     ) -> PageResponse:
         svc = get_service(request)
-        page = svc.list_comments(
-            post_id, root_comment_id=rootCommentId, limit=limit, cursor=cursor
-        )
+        page = svc.list_comments(post_id, root_comment_id=rootCommentId, limit=limit, cursor=cursor)
         return PageResponse(
             items=[CommentResponse.of(c) for c in page.items],
             nextCursor=page.next_cursor,

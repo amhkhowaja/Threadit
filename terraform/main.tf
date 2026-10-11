@@ -5,6 +5,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 6.0"
     }
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.4"
+    }
   }
 }
 
@@ -35,6 +39,9 @@ provider "aws" {
       wafv2          = var.floci_endpoint
       ecs            = var.floci_endpoint
       ec2            = var.floci_endpoint
+      sqs            = var.floci_endpoint
+      opensearch     = var.floci_endpoint
+      lambda         = var.floci_endpoint
     }
   }
 }
@@ -62,6 +69,21 @@ module "s3_images" {
   source            = "./modules/s3_images"
   name_prefix       = var.name_prefix
   enable_cloudfront = var.enable_cloudfront
+}
+
+module "opensearch" {
+  count       = var.enable_search ? 1 : 0
+  source      = "./modules/opensearch"
+  name_prefix = var.name_prefix
+}
+
+module "indexer" {
+  count               = var.enable_search ? 1 : 0
+  source              = "./modules/indexer"
+  name_prefix         = var.name_prefix
+  stream_arn          = module.dynamodb.stream_arn
+  opensearch_endpoint = module.opensearch[0].endpoint
+  source_dir          = var.lambda_build_dir
 }
 
 module "waf" {

@@ -40,6 +40,17 @@ class PostResponse(BaseModel):
             updatedAt=p.updated_at.isoformat(),
         )
 
+    @classmethod
+    def of_hit(cls, h) -> PostResponse:
+        return cls(
+            id=h.post_id,
+            userId=h.user_id,
+            title=h.title,
+            body="",
+            createdAt=h.created_at,
+            updatedAt=h.created_at,
+        )
+
 
 class CommentResponse(BaseModel):
     id: str

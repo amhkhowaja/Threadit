@@ -45,6 +45,14 @@ test: ## Run unit + api + contract tests (no AWS)
 openapi: ## Regenerate the authoritative openapi/v1.json from the apps
 	$(PY) tools/gen_openapi.py
 
+.PHONY: build-lambda
+build-lambda: ## Assemble the indexer Lambda package (handler + core + deps)
+	rm -rf build/lambda && mkdir -p build/lambda/services/indexer
+	cp -r libs/threadit_core/threadit_core build/lambda/threadit_core
+	cp services/indexer/handler.py services/indexer/__init__.py build/lambda/services/indexer/
+	touch build/lambda/services/__init__.py
+	$(PIP) install -q --target build/lambda urllib3==2.2.3 structlog==24.4.0
+
 .PHONY: check
 check: lint test ## Lint + test (CI gate)
 

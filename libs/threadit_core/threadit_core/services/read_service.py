@@ -2,9 +2,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from threadit_core.domain.errors import NotFoundError, SearchNotAvailableError
+from threadit_core.domain.errors import DomainError, NotFoundError, SearchNotAvailableError
 from threadit_core.domain.models import Page, Post
 from threadit_core.repositories.ports import CommentReadRepository, PostReadRepository
+from threadit_core.repositories.search_index import SearchIndex
+
+
+class SearchDegradedError(DomainError):
+    status = 503
+    error_type = "https://threadit/errors/search-degraded"
+    title = "Search temporarily unavailable"
+    retryable = True
 
 
 @dataclass(slots=True)
@@ -13,6 +21,7 @@ class ReadService:
     comments: CommentReadRepository
     default_limit: int = 20
     max_limit: int = 100
+    search: SearchIndex | None = None
 
     def _clamp(self, limit: int | None) -> int:
         if limit is None:
@@ -33,12 +42,21 @@ class ReadService:
         limit: int | None = None,
         cursor: str | None = None,
     ) -> Page:
-        if search_keyword:
-            raise SearchNotAvailableError("search is not available in this phase")
         n = self._clamp(limit)
+        if search_keyword:
+            return self._search(search_keyword, limit=n, cursor=cursor)
         if user_id:
             return self.posts.list_user_posts(user_id, limit=n, cursor=cursor)
         return self.posts.list_latest_posts(limit=n, cursor=cursor)
+
+    def _search(self, keyword: str, *, limit: int, cursor: str | None) -> Page:
+        if self.search is None:
+            raise SearchNotAvailableError("search is not available in this phase")
+        try:
+            result = self.search.search_posts(keyword, limit=limit, cursor=cursor)
+        except Exception as exc:  # noqa: BLE001 - degrade search only, never other reads
+            raise SearchDegradedError("search backend unavailable") from exc
+        return Page(items=tuple(result.hits), next_cursor=result.next_cursor)
 
     def list_comments(
         self,

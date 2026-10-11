@@ -37,10 +37,42 @@ def test_get_existing_post():
     assert svc.get_post("p1").post_id == "p1"
 
 
-def test_search_keyword_raises_501():
+def test_search_keyword_raises_501_when_unconfigured():
     svc = _svc()
     with pytest.raises(SearchNotAvailableError):
         svc.list_posts(search_keyword="hello")
+
+
+def test_search_returns_hits_when_configured():
+    from threadit_core.repositories.search_index import SearchHit, SearchIndex, SearchPage
+
+    class OkIndex(SearchIndex):
+        def upsert_post(self, doc): ...
+        def delete_post(self, post_id): ...
+        def search_posts(self, keyword, *, limit, cursor):
+            return SearchPage(
+                hits=(SearchHit(post_id="p1", title="t", user_id="u1", created_at="x"),),
+                next_cursor=None,
+            )
+
+    svc = ReadService(posts=FakePostRepo(), comments=FakeCommentRepo(), search=OkIndex())
+    page = svc.list_posts(search_keyword="t")
+    assert page.items[0].post_id == "p1"
+
+
+def test_search_degrades_to_503_on_backend_error():
+    from threadit_core.repositories.search_index import SearchIndex
+    from threadit_core.services.read_service import SearchDegradedError
+
+    class BrokenIndex(SearchIndex):
+        def upsert_post(self, doc): ...
+        def delete_post(self, post_id): ...
+        def search_posts(self, keyword, *, limit, cursor):
+            raise RuntimeError("opensearch down")
+
+    svc = ReadService(posts=FakePostRepo(), comments=FakeCommentRepo(), search=BrokenIndex())
+    with pytest.raises(SearchDegradedError):
+        svc.list_posts(search_keyword="t")
 
 
 def test_limit_is_clamped_to_max():

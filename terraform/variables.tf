@@ -55,3 +55,15 @@ variable "service_image" {
   type    = string
   default = "threadit:local"
 }
+
+variable "enable_search" {
+  type        = bool
+  default     = true
+  description = "Provision OpenSearch domain + Streams->Lambda indexer."
+}
+
+variable "lambda_build_dir" {
+  type        = string
+  default     = "../build/lambda"
+  description = "Pre-assembled Lambda package dir (handler + threadit_core + deps)."
+}

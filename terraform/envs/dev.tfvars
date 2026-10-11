@@ -8,3 +8,4 @@ enable_dax        = false
 enable_cloudfront = false
 enable_xray       = false
 enable_ecs        = false
+enable_search     = true
