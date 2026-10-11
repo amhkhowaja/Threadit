@@ -7,7 +7,7 @@ VENV        := .venv
 PY          := $(VENV)/bin/python
 PIP         := $(VENV)/bin/pip
 CORE_PATH   := libs/threadit_core
-export PYTHONPATH := $(CORE_PATH)
+export PYTHONPATH := $(CORE_PATH):.
 
 .PHONY: help
 help: ## List available targets
