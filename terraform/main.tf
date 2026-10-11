@@ -50,3 +50,26 @@ module "cognito" {
   source    = "./modules/cognito"
   pool_name = "${var.name_prefix}-users"
 }
+
+module "iam" {
+  source      = "./modules/iam"
+  name_prefix = var.name_prefix
+  table_arn   = module.dynamodb.table_arn
+}
+
+module "waf" {
+  source      = "./modules/waf"
+  name_prefix = var.name_prefix
+}
+
+module "apigw" {
+  source           = "./modules/apigw"
+  name_prefix      = var.name_prefix
+  cognito_issuer   = module.cognito.issuer
+  cognito_audience = module.cognito.app_client_id
+}
+
+resource "aws_wafv2_web_acl_association" "api" {
+  resource_arn = module.apigw.api_arn
+  web_acl_arn  = module.waf.web_acl_arn
+}
