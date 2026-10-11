@@ -1,0 +1,9 @@
+use_floci         = true
+floci_endpoint    = "http://localhost:4566"
+region            = "us-east-1"
+name_prefix       = "threadit-dev"
+table_name        = "threadit"
+ddb_billing_mode  = "PAY_PER_REQUEST"
+enable_dax        = false
+enable_cloudfront = false
+enable_xray       = false

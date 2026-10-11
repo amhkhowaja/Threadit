@@ -44,6 +44,6 @@ class CursorCodec:
         for key in data:
             if key not in _ALLOWED_KEY_NAMES:
                 raise InvalidCursorError("cursor contains an unexpected key")
-            if not isinstance(data[key], (str, int)):
+            if not isinstance(data[key], str | int):
                 raise InvalidCursorError("cursor value has an unexpected type")
         return data

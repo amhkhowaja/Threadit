@@ -50,8 +50,10 @@ def _redact_value(value: Any) -> Any:
         value = _JWT_RE.sub(_MASK, value)
         return value
     if isinstance(value, dict):
-        return {k: (_MASK if k.lower() in _DENY_KEYS else _redact_value(v)) for k, v in value.items()}
-    if isinstance(value, (list, tuple)):
+        return {
+            k: (_MASK if k.lower() in _DENY_KEYS else _redact_value(v)) for k, v in value.items()
+        }
+    if isinstance(value, list | tuple):
         return type(value)(_redact_value(v) for v in value)
     return value
 

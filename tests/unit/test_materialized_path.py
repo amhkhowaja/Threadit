@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
-
 from threadit_core.domain.errors import MaxDepthExceeded
 from threadit_core.repositories.keys import KeyFactory, MaterializedPathBuilder
 
-TS = datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc)
+TS = datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC)
 
 
 def test_top_level_comment_has_depth_zero_and_self_root():

@@ -4,7 +4,6 @@ import base64
 import json
 
 import pytest
-
 from threadit_core.domain.errors import InvalidCursorError
 from threadit_core.repositories.cursor import CursorCodec
 
