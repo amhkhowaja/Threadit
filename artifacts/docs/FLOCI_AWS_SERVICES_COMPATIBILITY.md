@@ -276,6 +276,14 @@ Deployed the P1 control plane to real AWS (account `453168420187`, `us-east-1`),
 - **F10 fix validated:** control plane applies clean without the (invalid) WAF→HTTP-API association.
 - Teardown confirmed the account clean across all services.
 
+### 8c. Real-AWS verification record (P2 search/images)
+
+Partial real-AWS run (account `453168420187`, `us-east-1`), then torn down:
+- **P2 Terraform is real-AWS-valid:** SQS DLQ, S3 image bucket (private, SSE-KMS, versioned), indexer IAM role (least-priv: Streams read + SQS send + logs), and the OpenSearch domain all began creating cleanly with real credentials/provider — no config errors.
+- **Not observed on real AWS:** Lambda function + event-source-mapping wiring, because Terraform must wait on the OpenSearch endpoint and a real `t3.small.search` domain takes **10–20 min** to become available (confirmed twice). This is an AWS timing constraint, not a config problem.
+- **Covered elsewhere:** the Stream→index→search *behavior* is proven against a **real OpenSearch engine** on Floci (3 integration tests: adapter upsert/search/delete, indexer e2e, search endpoint). The real-AWS gap is only the managed-ESM plumbing (standard wiring, no custom logic).
+- **Lesson (operational):** if a long OpenSearch apply is interrupted, the domain is **not yet in Terraform state** → it becomes an **orphan**. Must be deleted directly (`aws opensearch delete-domain`) — a plain `terraform destroy` won't remove it. Recommendation for real-AWS P2: provision OpenSearch in a **separate apply/stage** ahead of the Lambda, or use a `-target` first, so the long-running resource doesn't block (and isn't orphaned by) the rest.
+
 ---
 
 ## 9. Bottom line
