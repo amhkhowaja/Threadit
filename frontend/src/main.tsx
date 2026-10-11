@@ -3,11 +3,12 @@ import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { App } from "./App";
 import { AuthProvider } from "./lib/auth/AuthProvider";
-import { brandCss } from "./theme";
+import { brandCssVars } from "./theme";
+import "./index.css";
 
-// Inject the single-theme brand tokens as global CSS.
+// Inject brand tokens as CSS variables (Tailwind theme reads these).
 const style = document.createElement("style");
-style.textContent = brandCss();
+style.textContent = brandCssVars();
 document.head.appendChild(style);
 
 const queryClient = new QueryClient({

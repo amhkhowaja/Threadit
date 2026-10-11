@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-bg text-text font-sans antialiased;
+    font-size: 16px;
+    line-height: 1.65;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display font-semibold text-text;
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+  }
+  a {
+    @apply text-accent;
+  }
+  a:hover {
+    @apply text-accent-hover;
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  ::selection {
+    background: var(--accent-soft);
+  }
+}
+
+@layer components {
+  /* Readable article body for large posts. */
+  .prose-body {
+    max-width: var(--read-measure);
+    font-size: 1.0625rem;
+    line-height: 1.75;
+  }
+  .prose-body p {
+    margin: 0 0 1rem;
+  }
+  .clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}

@@ -17,6 +17,9 @@ class FakePresigner(AttachmentPresigner):
         self.calls.append({"key": object_key, "ct": content_type})
         return f"https://s3.example/{object_key}?sig=x"
 
+    def presign_get(self, *, object_key: str, expires_in: int) -> str:
+        return f"https://s3.example/{object_key}?get=1"
+
 
 def _svc(max_bytes: int = 5 * 1024 * 1024) -> AttachmentService:
     return AttachmentService(presigner=FakePresigner(), max_bytes=max_bytes, expires_in=300)

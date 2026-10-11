@@ -20,3 +20,10 @@ class S3AttachmentPresigner(AttachmentPresigner):
             Params={"Bucket": self._bucket, "Key": object_key, "ContentType": content_type},
             ExpiresIn=expires_in,
         )
+
+    def presign_get(self, *, object_key: str, expires_in: int) -> str:
+        return self._c.generate_presigned_url(
+            ClientMethod="get_object",
+            Params={"Bucket": self._bucket, "Key": object_key},
+            ExpiresIn=expires_in,
+        )

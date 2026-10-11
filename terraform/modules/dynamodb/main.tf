@@ -47,7 +47,7 @@ resource "aws_dynamodb_table" "threadit" {
     hash_key           = "GSI1PK"
     range_key          = "GSI1SK"
     projection_type    = "INCLUDE"
-    non_key_attributes = ["postId", "title", "body", "userId", "createdAt", "updatedAt", "schemaVersion"]
+    non_key_attributes = ["postId", "title", "body", "userId", "createdAt", "updatedAt", "schemaVersion", "attachment"]
   }
 
   # GSI2: posts/comments by user (AP4).
@@ -56,7 +56,7 @@ resource "aws_dynamodb_table" "threadit" {
     hash_key           = "GSI2PK"
     range_key          = "GSI2SK"
     projection_type    = "INCLUDE"
-    non_key_attributes = ["postId", "title", "body", "userId", "createdAt", "updatedAt", "schemaVersion"]
+    non_key_attributes = ["postId", "title", "body", "userId", "createdAt", "updatedAt", "schemaVersion", "attachment"]
   }
 
   # Streams enabled in P1 (D1) — no consumer yet; P2/P3 attach without a table change.

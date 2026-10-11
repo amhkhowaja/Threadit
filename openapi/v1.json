@@ -3,6 +3,10 @@
     "schemas": {
       "CommentResponse": {
         "properties": {
+          "authorName": {
+            "title": "Authorname",
+            "type": "string"
+          },
           "createdAt": {
             "title": "Createdat",
             "type": "string"
@@ -47,6 +51,7 @@
           "id",
           "postId",
           "userId",
+          "authorName",
           "text",
           "depth",
           "parentId",
@@ -92,6 +97,18 @@
             "minLength": 1,
             "title": "Body",
             "type": "string"
+          },
+          "imageKey": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Imagekey"
           },
           "title": {
             "maxLength": 300,
@@ -153,6 +170,10 @@
       },
       "PostResponse": {
         "properties": {
+          "authorName": {
+            "title": "Authorname",
+            "type": "string"
+          },
           "body": {
             "title": "Body",
             "type": "string"
@@ -164,6 +185,17 @@
           "id": {
             "title": "Id",
             "type": "string"
+          },
+          "imageUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Imageurl"
           },
           "title": {
             "title": "Title",
@@ -181,6 +213,7 @@
         "required": [
           "id",
           "userId",
+          "authorName",
           "title",
           "body",
           "createdAt",
@@ -275,6 +308,63 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/v1/attachments:presign": {
+      "post": {
+        "operationId": "presign_draft_v1_attachments_presign_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PresignRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresignResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Presign Draft"
+      }
+    },
+    "/v1/me": {
+      "get": {
+        "operationId": "me_v1_me_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Me V1 Me Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Me"
+      }
+    },
     "/v1/posts": {
       "get": {
         "operationId": "list_posts_v1_posts_get",

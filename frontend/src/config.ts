@@ -15,6 +15,7 @@ function flag(name: keyof ImportMetaEnv, def = true): boolean {
 
 export interface AppConfig {
   apiBaseUrl: string;
+  writeBaseUrl: string;
   cognito: {
     region: string;
     userPoolId: string;
@@ -26,19 +27,35 @@ export interface AppConfig {
     search: boolean;
     images: boolean;
   };
+  // Local dev only: when set, skip Cognito and send this as x-user-id on writes.
+  devUserId?: string;
+}
+
+function optional(name: keyof ImportMetaEnv): string | undefined {
+  return import.meta.env[name] || undefined;
+}
+
+const devUserId = optional("VITE_DEV_USER_ID");
+
+// In dev mode (devUserId set) Cognito values are not required.
+function cognitoVal(name: keyof ImportMetaEnv): string {
+  return devUserId ? (import.meta.env[name] ?? "") : required(name);
 }
 
 export const config: AppConfig = {
   apiBaseUrl: required("VITE_API_BASE_URL").replace(/\/$/, ""),
+  // Writes default to the same base; split for local (read :8080 / write :8081).
+  writeBaseUrl: (optional("VITE_WRITE_BASE_URL") ?? required("VITE_API_BASE_URL")).replace(/\/$/, ""),
   cognito: {
-    region: required("VITE_COGNITO_REGION"),
-    userPoolId: required("VITE_COGNITO_USER_POOL_ID"),
-    clientId: required("VITE_COGNITO_CLIENT_ID"),
-    domain: required("VITE_COGNITO_DOMAIN").replace(/\/$/, ""),
-    redirectUri: required("VITE_REDIRECT_URI"),
+    region: cognitoVal("VITE_COGNITO_REGION"),
+    userPoolId: cognitoVal("VITE_COGNITO_USER_POOL_ID"),
+    clientId: cognitoVal("VITE_COGNITO_CLIENT_ID"),
+    domain: cognitoVal("VITE_COGNITO_DOMAIN").replace(/\/$/, ""),
+    redirectUri: cognitoVal("VITE_REDIRECT_URI"),
   },
   features: {
     search: flag("VITE_FEATURE_SEARCH"),
     images: flag("VITE_FEATURE_IMAGES"),
   },
+  devUserId,
 };

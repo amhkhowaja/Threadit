@@ -3,6 +3,7 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException, Request
+from threadit_core.api.cors import install_cors
 from threadit_core.api.dtos import (
     CommentResponse,
     CreateCommentRequest,
@@ -108,11 +109,24 @@ def get_attachment_service(request):
 
 def create_app() -> FastAPI:
     app = FastAPI(title="Threadit post-write", version="1.0.0", lifespan=lifespan)
+    install_cors(app, load_settings().cors_allow_origins)
     install_error_handling(app)
 
     @app.get("/healthz")
     async def healthz() -> dict:
         return {"status": "ok"}
+
+    @app.post("/v1/attachments:presign")
+    async def presign_draft(
+        body: PresignRequest,
+        request: Request,
+        user_id: str = Depends(require_user_id),
+    ) -> PresignResponse:
+        svc = get_attachment_service(request)
+        out = svc.presign_draft(
+            user_id=user_id, content_type=body.contentType, size_bytes=body.sizeBytes
+        )
+        return PresignResponse(url=out.url, objectKey=out.object_key, expiresIn=out.expires_in)
 
     @app.post("/v1/posts", status_code=201)
     async def create_post(
@@ -123,7 +137,11 @@ def create_app() -> FastAPI:
     ) -> PostResponse:
         svc = get_service(request)
         post = svc.create_post(
-            user_id=user_id, title=body.title, body=body.body, idempotency_key=idem
+            user_id=user_id,
+            title=body.title,
+            body=body.body,
+            idempotency_key=idem,
+            image_key=body.imageKey,
         )
         return PostResponse.of(post)
 

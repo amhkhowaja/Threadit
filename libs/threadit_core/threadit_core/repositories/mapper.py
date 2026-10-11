@@ -21,7 +21,7 @@ class ItemMapper:
     def post_to_item(post: Post) -> dict:
         gsi1pk, gsi1sk = KeyFactory.gsi1_latest(post.created_at, post.post_id)
         gsi2pk, gsi2sk = KeyFactory.gsi2_user(post.user_id, post.created_at, post.post_id)
-        return {
+        item = {
             "PK": KeyFactory.post_pk(post.post_id),
             "SK": KeyFactory.post_sk(post.post_id),
             "GSI1PK": gsi1pk,
@@ -37,6 +37,9 @@ class ItemMapper:
             "updatedAt": _iso(post.updated_at),
             "schemaVersion": post.schema_version,
         }
+        if post.image_key:
+            item["attachment"] = post.image_key
+        return item
 
     @staticmethod
     def item_to_post(item: dict) -> Post:
@@ -47,6 +50,7 @@ class ItemMapper:
             body=item["body"],
             created_at=_parse(item["createdAt"]),
             updated_at=_parse(item["updatedAt"]),
+            image_key=item.get("attachment"),
             schema_version=int(item["schemaVersion"]),
         )
 

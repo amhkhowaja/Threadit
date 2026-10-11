@@ -31,7 +31,15 @@ class WriteService:
     idempotency: IdempotencyStore
     path_builder: MaterializedPathBuilder
 
-    def create_post(self, *, user_id: str, title: str, body: str, idempotency_key: str) -> Post:
+    def create_post(
+        self,
+        *,
+        user_id: str,
+        title: str,
+        body: str,
+        idempotency_key: str,
+        image_key: str | None = None,
+    ) -> Post:
         existing = self._replayed_target(idempotency_key)
         now = _now()
         post_id = existing or _new_id()
@@ -42,6 +50,7 @@ class WriteService:
             body=body,
             created_at=now,
             updated_at=now,
+            image_key=image_key,
         )
         if existing is None and self.idempotency.try_claim(idempotency_key, post_id):
             self.posts.put_post(post)

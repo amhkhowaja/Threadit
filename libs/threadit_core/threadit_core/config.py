@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     environment: str = Field(default="dev")
     log_level: str = Field(default="INFO")
 
+    # CORS allowed origins (comma-separated). Empty = none (safe default).
+    cors_allow_origins: str = Field(default="")
+
     aws_region: str = Field(default="us-east-1")
     # Floci endpoint in dev (http://localhost:4566); unset/None in prod (real AWS).
     aws_endpoint_url: str | None = Field(default=None)
@@ -36,6 +39,8 @@ class Settings(BaseSettings):
     # Attachments (P2). Empty bucket name -> endpoint returns 503 (not configured).
     attachments_bucket: str = Field(default="")
     max_attachment_bytes: int = Field(default=5 * 1024 * 1024)
+    # Image serving: CloudFront domain (prod) takes precedence; else presigned S3 GET (local).
+    images_cloudfront_domain: str = Field(default="")
 
     # Search (P2). Empty endpoint -> search_keyword returns 501 (P1 behavior).
     opensearch_endpoint: str = Field(default="")

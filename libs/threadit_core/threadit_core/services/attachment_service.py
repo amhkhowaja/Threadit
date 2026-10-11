@@ -37,12 +37,26 @@ class AttachmentService:
     def presign(
         self, *, user_id: str, post_id: str, content_type: str, size_bytes: int
     ) -> PresignedUpload:
+        self._validate(content_type, size_bytes)
+        key = f"users/{user_id}/posts/{post_id}/{uuid.uuid4().hex}.{_EXT[content_type]}"
+        return self._issue(key, content_type)
+
+    def presign_draft(
+        self, *, user_id: str, content_type: str, size_bytes: int
+    ) -> PresignedUpload:
+        # Used during compose, before a post exists; key is user-scoped under drafts/.
+        self._validate(content_type, size_bytes)
+        key = f"users/{user_id}/drafts/{uuid.uuid4().hex}.{_EXT[content_type]}"
+        return self._issue(key, content_type)
+
+    def _validate(self, content_type: str, size_bytes: int) -> None:
         if content_type not in self.allowed_types:
             allowed = sorted(self.allowed_types)
             raise UnsupportedMediaTypeError(f"content_type must be one of {allowed}")
         if size_bytes <= 0 or size_bytes > self.max_bytes:
             raise PayloadTooLargeError(f"size must be 1..{self.max_bytes} bytes")
-        key = f"users/{user_id}/posts/{post_id}/{uuid.uuid4().hex}.{_EXT[content_type]}"
+
+    def _issue(self, key: str, content_type: str) -> PresignedUpload:
         url = self.presigner.presign_put(
             object_key=key, content_type=content_type, expires_in=self.expires_in
         )

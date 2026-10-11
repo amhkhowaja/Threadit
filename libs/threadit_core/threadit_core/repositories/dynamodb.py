@@ -47,9 +47,28 @@ class DynamoDBRepository(
         return ItemMapper.item_to_post(item) if item else None
 
     def list_latest_posts(self, *, limit: int, cursor: str | None) -> Page:
-        # NOTE: single-bucket read for P1; LatestPostsPaginator (multi-bucket walk)
-        # is wired in P2 when load testing tunes bucket granularity.
-        return self._query_posts("GSI1", "GSI1PK", self._current_bucket(), limit, cursor)
+        # Walk the current hour bucket, then previous hourly buckets descending,
+        # accumulating newest-first until `limit` is filled. Spreads the hot "latest"
+        # read across partitions (avoids a hot monotonic key) while keeping the feed
+        # populated across hour boundaries.
+        from datetime import timedelta
+
+        now = datetime.now(UTC)
+        collected: list = []
+        lookback_hours = 72  # cover the last 3 days of buckets
+        for h in range(lookback_hours + 1):
+            if len(collected) >= limit:
+                break
+            bucket = KeyFactory.gsi1_latest(now - timedelta(hours=h), "")[0]
+            resp = self._t.query(
+                IndexName="GSI1",
+                KeyConditionExpression=Key("GSI1PK").eq(bucket),
+                ScanIndexForward=False,
+                Limit=limit - len(collected),
+            )
+            collected.extend(ItemMapper.item_to_post(i) for i in resp.get("Items", []))
+        # Cursor paging across buckets is deferred; feed shows the most recent `limit`.
+        return Page(items=tuple(collected[:limit]), next_cursor=None)
 
     def list_user_posts(self, user_id: str, *, limit: int, cursor: str | None) -> Page:
         return self._query_posts("GSI2", "GSI2PK", KeyFactory.user_pk(user_id), limit, cursor)

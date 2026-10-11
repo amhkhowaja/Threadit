@@ -8,16 +8,17 @@ export const brand = {
 
   color: {
     // Restrained neutral palette + one deep-green accent.
-    bg: "#faf9f7",
+    bg: "#f6f5f2",
     surface: "#ffffff",
-    border: "#e6e3dd",
-    text: "#1c1b19",
-    textMuted: "#6b6862",
+    surface2: "#faf9f7",
+    border: "#e7e4de",
+    text: "#17100f",
+    textMuted: "#6b675f",
     accent: "#1f6f54", // deep green
     accentHover: "#185a44",
     accentSoft: "#e9f1ed",
-    danger: "#9b2c2c",
-    dangerSoft: "#fbeaea",
+    danger: "#b4342f",
+    dangerSoft: "#fbeceb",
     focus: "#1f6f54",
   },
 
@@ -27,18 +28,18 @@ export const brand = {
     mono: `"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace`,
   },
 
-  // Modular type scale (rem).
+  // Modular type scale (rem) — larger, more confident.
   fontSize: {
-    xs: "0.75rem",
-    sm: "0.875rem",
+    xs: "0.78rem",
+    sm: "0.9rem",
     base: "1rem",
-    lg: "1.125rem",
-    xl: "1.375rem",
-    "2xl": "1.75rem",
-    "3xl": "2.25rem",
+    lg: "1.2rem",
+    xl: "1.5rem",
+    "2xl": "2rem",
+    "3xl": "2.6rem",
   },
   fontWeight: { regular: 400, medium: 500, semibold: 600 },
-  lineHeight: { tight: 1.2, normal: 1.55 },
+  lineHeight: { tight: 1.15, normal: 1.65 },
 
   // 4px spacing scale.
   space: {
@@ -49,10 +50,10 @@ export const brand = {
     xl: "2.5rem",
   },
 
-  radius: { sm: "4px", md: "8px", lg: "12px" },
+  radius: { sm: "6px", md: "10px", lg: "16px" },
   shadow: { sm: "0 1px 2px rgba(0,0,0,0.05)", md: "0 2px 8px rgba(0,0,0,0.06)" },
 
-  layout: { maxWidth: "720px", contentWidth: "640px" },
+  layout: { maxWidth: "1100px", contentWidth: "820px", readMeasure: "68ch" },
   breakpoint: { sm: "640px", md: "768px" },
 } as const;
 

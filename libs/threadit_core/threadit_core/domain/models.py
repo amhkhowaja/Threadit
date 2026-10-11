@@ -14,6 +14,7 @@ class Post:
     body: str
     created_at: datetime
     updated_at: datetime
+    image_key: str | None = None
     schema_version: int = SCHEMA_VERSION
 
 

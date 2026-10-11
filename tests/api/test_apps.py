@@ -40,8 +40,11 @@ def _write_client(write: WriteService) -> TestClient:
 
 
 def _read_client(read: ReadService) -> TestClient:
+    from threadit_core.services.image_url import ImageUrlResolver
+
     app = read_app.create_app()
     app.state.read_service = read
+    app.state.image_resolver = ImageUrlResolver()
     return TestClient(app)
 
 
