@@ -38,8 +38,12 @@ fmt: ## Auto-format / auto-fix lint issues
 	$(VENV)/bin/ruff format libs services tests
 
 .PHONY: test
-test: ## Run unit + api tests (no AWS)
-	$(PY) -m pytest tests/unit tests/api -q
+test: ## Run unit + api + contract tests (no AWS)
+	$(PY) -m pytest tests/unit tests/api tests/contract -q
+
+.PHONY: openapi
+openapi: ## Regenerate the authoritative openapi/v1.json from the apps
+	$(PY) tools/gen_openapi.py
 
 .PHONY: check
 check: lint test ## Lint + test (CI gate)
