@@ -9,6 +9,10 @@ variable "client_sg_id" {
   type    = string
   default = ""
 }
+variable "create_sg" {
+  type    = bool
+  default = false
+}
 
 data "aws_iam_policy_document" "assume" {
   statement {
@@ -45,7 +49,7 @@ resource "aws_dax_subnet_group" "dax" {
 
 # Allow the read service (client SG) to reach DAX on 8111.
 resource "aws_security_group" "dax" {
-  count       = var.vpc_id == "" ? 0 : 1
+  count       = var.create_sg ? 1 : 0
   name        = "${var.name_prefix}-dax-sg"
   description = "DAX cluster access from the read service"
   vpc_id      = var.vpc_id
@@ -70,7 +74,7 @@ resource "aws_dax_cluster" "read_cache" {
   node_type          = "dax.t3.small"
   replication_factor = 1
   subnet_group_name  = aws_dax_subnet_group.dax.name
-  security_group_ids = var.vpc_id == "" ? null : [aws_security_group.dax[0].id]
+  security_group_ids = var.create_sg ? [aws_security_group.dax[0].id] : null
 }
 
 output "cluster_endpoint" {

@@ -8,6 +8,10 @@ variable "client_sg_id" {
   type    = string
   default = ""
 }
+variable "create_sg" {
+  type    = bool
+  default = false
+}
 
 resource "aws_elasticache_subnet_group" "cache" {
   name       = "${var.name_prefix}-cache"
@@ -16,7 +20,7 @@ resource "aws_elasticache_subnet_group" "cache" {
 
 # Allow the services (client SG) to reach Redis on 6379.
 resource "aws_security_group" "cache" {
-  count       = var.vpc_id == "" ? 0 : 1
+  count       = var.create_sg ? 1 : 0
   name        = "${var.name_prefix}-cache-sg"
   description = "ElastiCache Redis access from the services"
   vpc_id      = var.vpc_id
@@ -41,7 +45,7 @@ resource "aws_elasticache_cluster" "cache" {
   node_type          = "cache.t3.micro"
   num_cache_nodes    = 1
   subnet_group_name  = aws_elasticache_subnet_group.cache.name
-  security_group_ids = var.vpc_id == "" ? null : [aws_security_group.cache[0].id]
+  security_group_ids = var.create_sg ? [aws_security_group.cache[0].id] : null
 }
 
 output "endpoint" {

@@ -12,6 +12,10 @@ variable "dax_cluster_arn" {
   type    = string
   default = ""
 }
+variable "enable_dax" {
+  type    = bool
+  default = false
+}
 
 data "aws_iam_policy_document" "ecs_assume" {
   statement {
@@ -103,7 +107,7 @@ resource "aws_iam_role_policy" "read_s3" {
 # DAX data-plane reads (only when a DAX cluster is provisioned). DAX passes
 # ConsistentRead through to DynamoDB, which the read role already allows.
 data "aws_iam_policy_document" "read_dax" {
-  count = var.dax_cluster_arn == "" ? 0 : 1
+  count = var.enable_dax ? 1 : 0
   statement {
     actions = [
       "dax:GetItem",
@@ -116,7 +120,7 @@ data "aws_iam_policy_document" "read_dax" {
 }
 
 resource "aws_iam_role_policy" "read_dax" {
-  count  = var.dax_cluster_arn == "" ? 0 : 1
+  count  = var.enable_dax ? 1 : 0
   name   = "dax-read"
   role   = aws_iam_role.read.id
   policy = data.aws_iam_policy_document.read_dax[0].json

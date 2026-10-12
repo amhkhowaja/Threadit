@@ -124,6 +124,7 @@ module "iam" {
   table_arn         = module.dynamodb.table_arn
   images_bucket_arn = module.s3_images.bucket_arn
   dax_cluster_arn   = var.enable_dax ? module.dax[0].cluster_arn : ""
+  enable_dax        = var.enable_dax
 }
 
 module "s3_images" {
@@ -162,6 +163,7 @@ module "dax" {
   table_arn    = module.dynamodb.table_arn
   vpc_id       = module.network.vpc_id
   client_sg_id = var.enable_prod_web ? module.network.service_security_group_id : ""
+  create_sg    = var.enable_prod_web
 }
 
 module "elasticache" {
@@ -171,6 +173,7 @@ module "elasticache" {
   subnet_ids   = var.enable_prod_web ? module.network.public_subnet_ids : module.network.private_subnet_ids
   vpc_id       = module.network.vpc_id
   client_sg_id = var.enable_prod_web ? module.network.service_security_group_id : ""
+  create_sg    = var.enable_prod_web
 }
 
 module "cloudfront" {
