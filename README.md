@@ -140,6 +140,54 @@ AWS service icons.
 > Cognito auth, DynamoDB, S3 images, OpenSearch search, and the Streams→Lambda indexer —
 > was deployed and verified against real AWS.
 
+## Non-functional testing
+
+Threadit ships a **real** multi-user load/NFR harness (`tests/load/`, `make nfr`): an
+async httpx driver that starts the actual read/write services and hammers them with
+concurrent virtual users against either backend (Floci locally, or real AWS). It is
+cost-bounded (small user counts, short windows). Full write-up:
+[`artifacts/docs/NFR_REPORT.md`](artifacts/docs/NFR_REPORT.md).
+
+What we covered:
+
+| ![NFR coverage](docs/nfr/coverage.png) | ![Search freshness](docs/nfr/search-lag.png) |
+|---|---|
+
+- **Latency** (read/write p50/p95/p99), **throughput** (RPS), and **availability**
+  (non-5xx) under concurrent load.
+- **Eventual consistency** — read-your-own-write via DynamoDB `ConsistentRead`.
+- **Search freshness** — end-to-end write → Streams → Lambda → OpenSearch indexing lag.
+- **Rate limiting** — app-level fixed-window limiter returns `429 + Retry-After`.
+- **Caching** — single-flight herd guard and a hot-post read burst.
+- **Partition tolerance** — the indexer's SQS dead-letter path on failure.
+
+### Latency
+
+| ![In-region latency](docs/nfr/latency-percentiles.png) | ![Latency journey](docs/nfr/latency-journey.png) |
+|---|---|
+
+In-region DynamoDB reads measured from an in-VPC Lambda through the private gateway
+endpoint are **p50 5.1 ms, p95 13.4 ms, p99 15.0 ms** — about **10× inside** the
+≤150 ms read SLO.
+
+The second chart is an honest story: the first NFR run from a laptop to `us-east-1`
+showed multi-second p99, which looked alarming. It was **two stacked measurement
+artifacts, never the system** — a transcontinental WAN round-trip per request, then
+(in the in-VPC probe) Lambda CPU starvation at 128 MB. At 512 MB in-region, DynamoDB
+is single-digit-ms as expected. Representative end-to-end SLO sign-off still needs load
+generated from **inside the VPC** (a Fargate load task), which we deliberately defer to
+staging to avoid standing cost.
+
+### Throughput, availability, and search freshness
+
+![Throughput and availability](docs/nfr/throughput-availability.png)
+
+Locally the harness sustained **311 RPS** with **100% non-5xx availability** (also 100%
+on real AWS). On real AWS, **search freshness measured 1.89 s** end-to-end — well within
+the <10 s SLO and a trustworthy, environment-independent number.
+
+The graphs are generated from the recorded results by `docs/nfr/generate_graphs.py`.
+
 ## License
 
 See [LICENSE](LICENSE).
