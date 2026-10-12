@@ -84,3 +84,38 @@ variable "loadgen_build_dir" {
   type    = string
   default = "../build/loadgen"
 }
+
+variable "enable_prod_web" {
+  type        = bool
+  default     = false
+  description = "Full production web stack: ECR + ECS/ALB + Cognito hosted UI + frontend CloudFront."
+}
+
+variable "enable_frontend_cdn" {
+  type        = bool
+  default     = true
+  description = "Host the frontend on S3+CloudFront. Off => frontend runs elsewhere (e.g. locally)."
+}
+
+variable "enable_apigw" {
+  type        = bool
+  default     = true
+  description = "Legacy API Gateway module (off for the ALB-based prod web stack)."
+}
+
+variable "enable_images_cdn" {
+  type        = bool
+  default     = false
+  description = "CloudFront distribution in front of the image bucket."
+}
+
+variable "cognito_domain_prefix" {
+  type    = string
+  default = "threadit-prod-auth"
+}
+
+variable "frontend_public_url" {
+  type        = string
+  default     = ""
+  description = "Public origin for Cognito callback + CORS. If empty, uses the frontend CloudFront URL."
+}

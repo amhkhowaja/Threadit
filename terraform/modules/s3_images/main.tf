@@ -3,9 +3,26 @@ variable "enable_cloudfront" {
   type    = bool
   default = true
 }
+variable "cors_origin" {
+  type    = string
+  default = ""
+}
 
 resource "aws_s3_bucket" "images" {
   bucket = "${var.name_prefix}-images"
+}
+
+# Allow the web origin to upload directly via presigned PUT (browser) and read.
+resource "aws_s3_bucket_cors_configuration" "images" {
+  count  = var.cors_origin == "" ? 0 : 1
+  bucket = aws_s3_bucket.images.id
+  cors_rule {
+    allowed_methods = ["PUT", "GET"]
+    allowed_origins = [var.cors_origin]
+    allowed_headers = ["*"]
+    expose_headers  = ["ETag"]
+    max_age_seconds = 600
+  }
 }
 
 resource "aws_s3_bucket_public_access_block" "images" {

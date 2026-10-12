@@ -58,9 +58,62 @@ module "dynamodb" {
 
 data "aws_caller_identity" "current" {}
 
+locals {
+  # Public origin for Cognito callbacks + service CORS. Prefer an explicit URL
+  # (e.g. http://localhost:5173 for local frontend); else the frontend CloudFront URL.
+  web_origin = (
+    var.frontend_public_url != "" ? var.frontend_public_url :
+    var.enable_frontend_cdn && var.enable_prod_web ? module.frontend[0].url :
+    "http://localhost:5173"
+  )
+}
+
+module "network" {
+  source      = "./modules/network"
+  name_prefix = var.name_prefix
+}
+
 module "cognito" {
-  source    = "./modules/cognito"
-  pool_name = "${var.name_prefix}-users"
+  source        = "./modules/cognito"
+  pool_name     = "${var.name_prefix}-users"
+  domain_prefix = var.cognito_domain_prefix
+  callback_url  = "${local.web_origin}/auth/callback"
+  logout_url    = local.web_origin
+}
+
+# Production web hosting (frontend) + container registry.
+module "frontend" {
+  count       = var.enable_prod_web && var.enable_frontend_cdn ? 1 : 0
+  source      = "./modules/frontend"
+  name_prefix = var.name_prefix
+}
+
+module "ecr" {
+  count       = var.enable_prod_web ? 1 : 0
+  source      = "./modules/ecr"
+  name_prefix = var.name_prefix
+}
+
+module "ecs_alb" {
+  count                    = var.enable_prod_web ? 1 : 0
+  source                   = "./modules/ecs_alb"
+  name_prefix              = var.name_prefix
+  image                    = var.service_image
+  region                   = var.region
+  table_name               = module.dynamodb.table_name
+  subnet_ids               = module.network.public_subnet_ids
+  alb_sg_id                = module.network.alb_security_group_id
+  service_sg_id            = module.network.service_security_group_id
+  vpc_id                   = module.network.vpc_id
+  write_role_arn           = module.iam.write_role_arn
+  read_role_arn            = module.iam.read_role_arn
+  execution_role_arn       = module.iam.execution_role_arn
+  cognito_issuer           = module.cognito.issuer
+  cognito_audience         = module.cognito.app_client_id
+  cors_origin              = local.web_origin
+  attachments_bucket       = module.s3_images.bucket_name
+  images_cloudfront_domain = var.enable_images_cdn ? module.cloudfront[0].domain_name : ""
+  opensearch_endpoint      = var.enable_search ? module.opensearch[0].endpoint : ""
 }
 
 module "iam" {
@@ -74,6 +127,7 @@ module "s3_images" {
   source            = "./modules/s3_images"
   name_prefix       = var.name_prefix
   enable_cloudfront = var.enable_cloudfront
+  cors_origin       = local.web_origin
 }
 
 module "opensearch" {
@@ -113,7 +167,7 @@ module "elasticache" {
 }
 
 module "cloudfront" {
-  count                         = var.enable_cloudfront ? 1 : 0
+  count                         = var.enable_images_cdn ? 1 : 0
   source                        = "./modules/cloudfront"
   name_prefix                   = var.name_prefix
   images_bucket_regional_domain = module.s3_images.bucket_regional_domain
@@ -138,6 +192,7 @@ module "waf" {
 }
 
 module "apigw" {
+  count            = var.enable_apigw ? 1 : 0
   source           = "./modules/apigw"
   name_prefix      = var.name_prefix
   cognito_issuer   = module.cognito.issuer
@@ -147,11 +202,6 @@ module "apigw" {
 # NOTE: WAFv2 cannot associate to API Gateway v2 (HTTP API). P1 volumetric limiting is
 # API Gateway stage throttling (see apigw module). The WAF ACL is retained for the
 # CloudFront front added in P2 (FLOCI/ADR-008).
-
-module "network" {
-  source      = "./modules/network"
-  name_prefix = var.name_prefix
-}
 
 module "ecs" {
   count              = var.enable_ecs ? 1 : 0

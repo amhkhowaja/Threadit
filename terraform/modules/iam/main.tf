@@ -19,10 +19,16 @@ data "aws_iam_policy_document" "ecs_assume" {
   }
 }
 
-# Write role: only Put/Update on the table + its indexes (least privilege, R9).
+# Write role: Put/Update + the reads the write path legitimately needs
+# (idempotency sentinel resolution, parent-comment lookup). Still no delete. (R9)
 data "aws_iam_policy_document" "write" {
   statement {
-    actions   = ["dynamodb:PutItem", "dynamodb:UpdateItem"]
+    actions = [
+      "dynamodb:PutItem",
+      "dynamodb:UpdateItem",
+      "dynamodb:GetItem",
+      "dynamodb:Query",
+    ]
     resources = [var.table_arn, "${var.table_arn}/index/*"]
   }
 }
@@ -71,6 +77,23 @@ resource "aws_iam_role_policy" "read" {
   name   = "ddb-read"
   role   = aws_iam_role.read.id
   policy = data.aws_iam_policy_document.read.json
+}
+
+# S3 image read (presigned GET is signed with the read role's creds, so the role
+# itself must be allowed s3:GetObject on the image objects). (least privilege)
+data "aws_iam_policy_document" "read_s3" {
+  count = var.enable_images ? 1 : 0
+  statement {
+    actions   = ["s3:GetObject"]
+    resources = ["${var.images_bucket_arn}/*"]
+  }
+}
+
+resource "aws_iam_role_policy" "read_s3" {
+  count  = var.enable_images ? 1 : 0
+  name   = "s3-images-read"
+  role   = aws_iam_role.read.id
+  policy = data.aws_iam_policy_document.read_s3[0].json
 }
 
 # ECS task execution role (pull image, write logs).

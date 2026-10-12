@@ -15,6 +15,8 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
+data "aws_region" "current" {}
+
 resource "aws_subnet" "private" {
   count             = 2
   vpc_id            = aws_vpc.main.id
@@ -56,7 +58,73 @@ resource "aws_security_group" "lambda" {
   tags = { Name = "${var.name_prefix}-lambda-sg" }
 }
 
-data "aws_region" "current" {}
+# --- Public subnets + internet egress (for Fargate tasks + ALB; no NAT) ---
+resource "aws_internet_gateway" "igw" {
+  vpc_id = aws_vpc.main.id
+  tags   = { Name = "${var.name_prefix}-igw" }
+}
+
+resource "aws_subnet" "public" {
+  count                   = 2
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = cidrsubnet(var.cidr, 8, count.index + 10)
+  availability_zone       = data.aws_availability_zones.available.names[count.index]
+  map_public_ip_on_launch = true
+  tags                    = { Name = "${var.name_prefix}-public-${count.index}" }
+}
+
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw.id
+  }
+  tags = { Name = "${var.name_prefix}-public-rt" }
+}
+
+resource "aws_route_table_association" "public" {
+  count          = 2
+  subnet_id      = aws_subnet.public[count.index].id
+  route_table_id = aws_route_table.public.id
+}
+
+# ALB security group: public HTTP in.
+resource "aws_security_group" "alb" {
+  name   = "${var.name_prefix}-alb-sg"
+  vpc_id = aws_vpc.main.id
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  tags = { Name = "${var.name_prefix}-alb-sg" }
+}
+
+# Service security group: accept from ALB; egress anywhere.
+resource "aws_security_group" "service" {
+  name   = "${var.name_prefix}-svc-sg"
+  vpc_id = aws_vpc.main.id
+  ingress {
+    from_port       = 8080
+    to_port         = 8081
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
+  }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  tags = { Name = "${var.name_prefix}-svc-sg" }
+}
 
 output "vpc_id" {
   value = aws_vpc.main.id
@@ -64,6 +132,15 @@ output "vpc_id" {
 output "private_subnet_ids" {
   value = aws_subnet.private[*].id
 }
+output "public_subnet_ids" {
+  value = aws_subnet.public[*].id
+}
 output "lambda_security_group_id" {
   value = aws_security_group.lambda.id
+}
+output "alb_security_group_id" {
+  value = aws_security_group.alb.id
+}
+output "service_security_group_id" {
+  value = aws_security_group.service.id
 }
