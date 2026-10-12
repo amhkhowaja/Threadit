@@ -4,6 +4,14 @@ Threadit is a Reddit-style threaded message board, simple to use and architected
 serve billions. It is AWS-managed-service-first, Terraform-provisioned, with a React +
 TypeScript frontend and a Python 3.12 / FastAPI backend.
 
+## Screenshots
+
+Running locally on Floci with seeded content (`make app-floci && make seed`).
+
+| Feed | Create a post | Threaded discussion |
+|------|---------------|---------------------|
+| ![Threadit feed](docs/screenshots/feed.png) | ![Create a post](docs/screenshots/create-post.png) | ![Threaded post discussion](docs/screenshots/post-thread.png) |
+
 ## Quickstart (no AWS account needed)
 
 Everything runs locally against the [Floci](https://floci.dev) AWS emulator, with real
