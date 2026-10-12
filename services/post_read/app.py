@@ -50,6 +50,18 @@ def build_read_service(settings) -> ReadService:
         default_limit=settings.default_page_limit,
         max_limit=settings.max_page_limit,
         search=search,
+        post_cache=_build_post_cache(settings),
+    )
+
+
+def _build_post_cache(settings):
+    if settings.read_cache_ttl_s <= 0:
+        return None
+    from threadit_core.services.cache import SingleFlightCache
+
+    return SingleFlightCache(
+        ttl=settings.read_cache_ttl_s,
+        stale_ttl=settings.read_cache_stale_ttl_s,
     )
 
 

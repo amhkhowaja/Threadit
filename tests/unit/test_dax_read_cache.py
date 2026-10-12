@@ -21,6 +21,8 @@ class _Settings:
         self.aws_endpoint_url = None
         self.default_page_limit = 20
         self.max_page_limit = 100
+        self.read_cache_ttl_s = 0  # cache off in these builder-selection tests
+        self.read_cache_stale_ttl_s = 10.0
 
 
 @pytest.fixture

@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     # endpoint (microsecond cached reads); empty => read DynamoDB directly.
     dax_endpoint: str = Field(default="")
 
+    # In-process single-flight read cache (ADR-005). ttl=0 disables it.
+    read_cache_ttl_s: float = Field(default=2.0)
+    read_cache_stale_ttl_s: float = Field(default=10.0)
+
     # Cognito (claims trusted from the API Gateway authorizer in P1).
     cognito_issuer: str | None = Field(default=None)
     cognito_audience: str | None = Field(default=None)

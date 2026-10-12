@@ -6,6 +6,7 @@ from threadit_core.domain.errors import DomainError, NotFoundError, SearchNotAva
 from threadit_core.domain.models import Page, Post
 from threadit_core.repositories.ports import CommentReadRepository, PostReadRepository
 from threadit_core.repositories.search_index import SearchIndex
+from threadit_core.services.cache import SingleFlightCache
 
 
 class SearchDegradedError(DomainError):
@@ -22,6 +23,9 @@ class ReadService:
     default_limit: int = 20
     max_limit: int = 100
     search: SearchIndex | None = None
+    # Optional in-process read cache (ADR-005): coalesces concurrent hot-post
+    # reads to a single backend load + stale-while-revalidate. None => no caching.
+    post_cache: SingleFlightCache[Post] | None = None
 
     def _clamp(self, limit: int | None) -> int:
         if limit is None:
@@ -29,6 +33,13 @@ class ReadService:
         return max(1, min(limit, self.max_limit))
 
     def get_post(self, post_id: str, *, consistent: bool = False) -> Post:
+        # Read-your-own-write (consistent) must bypass the cache so a just-written
+        # post is never served stale.
+        if self.post_cache is not None and not consistent:
+            return self.post_cache.get(f"post:{post_id}", lambda: self._load_post(post_id))
+        return self._load_post(post_id, consistent=consistent)
+
+    def _load_post(self, post_id: str, *, consistent: bool = False) -> Post:
         post = self.posts.get_post(post_id, consistent=consistent)
         if post is None:
             raise NotFoundError("post not found")

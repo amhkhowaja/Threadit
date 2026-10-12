@@ -10,7 +10,7 @@ WORKDIR /app
 RUN pip install --no-cache-dir \
     fastapi==0.115.5 pydantic==2.9.2 pydantic-settings==2.6.1 \
     boto3==1.35.54 structlog==24.4.0 "pyjwt[crypto]==2.9.0" \
-    amazon-dax-client==2.1.0 \
+    amazon-dax-client==2.1.0 redis==5.1.1 \
     "uvicorn[standard]==0.32.0"
 
 COPY libs/threadit_core/threadit_core /app/threadit_core

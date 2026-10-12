@@ -115,6 +115,7 @@ module "ecs_alb" {
   images_cloudfront_domain = var.enable_images_cdn ? module.cloudfront[0].domain_name : ""
   opensearch_endpoint      = var.enable_search ? module.opensearch[0].endpoint : ""
   dax_endpoint             = var.enable_dax ? "daxs://${module.dax[0].cluster_endpoint}" : ""
+  redis_endpoint           = var.enable_elasticache ? module.elasticache[0].endpoint : ""
 }
 
 module "iam" {
@@ -164,10 +165,12 @@ module "dax" {
 }
 
 module "elasticache" {
-  count       = var.enable_elasticache ? 1 : 0
-  source      = "./modules/elasticache"
-  name_prefix = var.name_prefix
-  subnet_ids  = module.network.private_subnet_ids
+  count        = var.enable_elasticache ? 1 : 0
+  source       = "./modules/elasticache"
+  name_prefix  = var.name_prefix
+  subnet_ids   = var.enable_prod_web ? module.network.public_subnet_ids : module.network.private_subnet_ids
+  vpc_id       = module.network.vpc_id
+  client_sg_id = var.enable_prod_web ? module.network.service_security_group_id : ""
 }
 
 module "cloudfront" {
