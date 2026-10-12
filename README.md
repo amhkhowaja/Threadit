@@ -120,14 +120,19 @@ Implemented components:
   presigned `GET` (or CloudFront in prod).
 - **OpenSearch + Lambda indexer** — a Streams-triggered Lambda projects posts into an
   OpenSearch index for keyword search; failed events go to an **SQS** dead-letter queue.
+- **Cache tier** — three layers, all wired into the request path: an **in-process
+  single-flight cache** in the read service (coalesces concurrent hot-post reads;
+  on by default), **DAX** in front of DynamoDB for cached reads, and **ElastiCache
+  (Redis)** holding the shared cross-instance rate-limit window for writes.
+  Consistent (read-your-own-write) reads bypass the caches.
 
-Request flows:
+Request flows (edges in the diagram show the real `/v1` endpoints):
 
-- **Read** (public): browser → CloudFront → ALB → read service → DynamoDB (and
-  OpenSearch for search, presigned S3 GET for images).
+- **Read** (public): browser → CloudFront → ALB → read service (in-process cache →
+  DAX → DynamoDB; OpenSearch for `?search_keyword`; presigned S3 GET for images).
 - **Write** (authenticated): browser signs in with Cognito → `POST` → ALB → write
-  service (verifies JWT) → DynamoDB; images are uploaded directly to S3 via a
-  presigned URL.
+  service (verifies JWT, checks the Redis rate-limit window) → DynamoDB; images are
+  uploaded directly to S3 via a presigned URL.
 - **Search indexing** (async): DynamoDB Streams → Lambda indexer → OpenSearch, with an
   SQS DLQ for failures.
 
