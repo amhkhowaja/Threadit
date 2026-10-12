@@ -231,3 +231,9 @@ __marimo__/
 # Terraform-generated lambda build artifacts
 terraform/modules/*/.build/
 build/lambda/
+
+# Local app-launch runtime (PIDs + logs from scripts/run-*.sh)
+.run/
+
+# Scraped seed content (third-party forum data; regenerate with `make seed`)
+scripts/seed/data/

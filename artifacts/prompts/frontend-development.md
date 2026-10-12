@@ -1,0 +1,4 @@
+ for frontend development , generate the detailed prompt to cover all implemented use cases , include description of each page , ux and ui , brand typography . consult on the senior  
+  ui and ux agents for generating the prompt . should be react and typescript based . and the implementation should be like very configurable . so after generating the brand           
+  typography, we only need to plug in the endpoints and configuration and thats all , our app starts to work . the ux should be minimalistic and sober without the dark light theme .   
+  The brand logo need to be  thought as well for Threadit kind of clone of reddit with similar concept.                   

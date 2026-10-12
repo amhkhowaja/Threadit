@@ -62,6 +62,38 @@ build-loadgen: ## Assemble the in-VPC loadgen Lambda package
 .PHONY: check
 check: lint test ## Lint + test (CI gate)
 
+# ---------------------------------------------------------------------------
+# App launch — run the FULL app (frontend + backend) with one command.
+# ---------------------------------------------------------------------------
+
+.PHONY: setup
+setup: ## One-command contributor setup (venv, deps, frontend, browsers)
+	./scripts/setup.sh
+
+.PHONY: app-floci
+app-floci: ## Run the full app locally on Floci (no AWS) -> http://localhost:5173
+	./scripts/run-floci.sh
+
+.PHONY: app-aws
+app-aws: ## Run the local frontend against the deployed AWS backend -> http://localhost:5173
+	./scripts/run-aws.sh
+
+.PHONY: app-stop
+app-stop: ## Stop locally-launched app processes (frontend + backend services)
+	./scripts/stop.sh
+
+.PHONY: aws-up
+aws-up: ## Deploy the backend to REAL AWS (builds+pushes image; billing!)
+	./scripts/aws-deploy.sh up
+
+.PHONY: aws-down
+aws-down: ## Tear down the AWS backend stack (stops billing)
+	./scripts/aws-deploy.sh down
+
+.PHONY: seed
+seed: ## Seed a clean local Floci Threadit with real forum content (needs app-floci)
+	./scripts/seed/run.sh
+
 .PHONY: floci-up
 floci-up: ## Start the pinned Floci emulator (dev AWS)
 	docker compose up -d
