@@ -96,6 +96,50 @@ because that is the Cognito callback URL registered by Terraform.
 See `frontend/README.md` for frontend-specific config (brand tokens, env, backend
 switching) and `artifacts/docs/` for the architecture and design records.
 
+## System design
+
+![Threadit implemented architecture](docs/architecture/threadit-architecture.svg)
+
+The diagram shows what is actually provisioned by the Terraform in this repo (the same
+code runs against the Floci emulator in dev and real AWS in prod).
+
+Implemented components:
+
+- **CloudFront** — edge cache in front of the API and images (the headline feature;
+  requires AWS account verification, see the AWS caveats above).
+- **Application Load Balancer** — single entry point that path-routes `POST` requests
+  to the write service and everything else to the read service.
+- **ECS Fargate (read + write)** — one container image, run as two services:
+  `post_read` (`:8080`, public GET) and `post_write` (`:8081`, authenticated POST).
+  Pulled from **Amazon ECR**, running inside a **VPC** across two AZs.
+- **Amazon Cognito** — hosted-UI sign-in; the SPA uses OIDC/PKCE and the write service
+  verifies the JWT access token in-process.
+- **DynamoDB** — single-table design with GSIs for the feed and by-user queries, plus
+  DynamoDB **Streams** for the search pipeline.
+- **S3** — post images, uploaded by the browser via presigned `PUT` and read via
+  presigned `GET` (or CloudFront in prod).
+- **OpenSearch + Lambda indexer** — a Streams-triggered Lambda projects posts into an
+  OpenSearch index for keyword search; failed events go to an **SQS** dead-letter queue.
+
+Request flows:
+
+- **Read** (public): browser → CloudFront → ALB → read service → DynamoDB (and
+  OpenSearch for search, presigned S3 GET for images).
+- **Write** (authenticated): browser signs in with Cognito → `POST` → ALB → write
+  service (verifies JWT) → DynamoDB; images are uploaded directly to S3 via a
+  presigned URL.
+- **Search indexing** (async): DynamoDB Streams → Lambda indexer → OpenSearch, with an
+  SQS DLQ for failures.
+
+The diagram is generated from `docs/architecture/generate_diagram.py` using the official
+AWS service icons.
+
+> **Note on CloudFront.** The CloudFront edge-cache path (dashed in the diagram) is
+> **not yet verified end-to-end**: creating a CloudFront distribution on this AWS account
+> is blocked pending AWS account verification. Everything else — ALB, ECS read/write,
+> Cognito auth, DynamoDB, S3 images, OpenSearch search, and the Streams→Lambda indexer —
+> was deployed and verified against real AWS.
+
 ## License
 
 See [LICENSE](LICENSE).
