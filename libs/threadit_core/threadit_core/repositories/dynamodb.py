@@ -25,6 +25,18 @@ def build_table(*, table_name: str, region: str, endpoint_url: str | None):
     return resource.Table(table_name)
 
 
+def build_dax_table(*, table_name: str, region: str, dax_endpoint: str):
+    """Return a DAX-backed table exposing the SAME resource `Table` interface as
+    build_table, so the repository code is unchanged. Reads (GetItem/Query/
+    BatchGetItem) are served from the DAX cluster cache; writes pass through to
+    DynamoDB. Requires the `amazondax` client and in-VPC connectivity to the cluster.
+    """
+    from amazondax import AmazonDaxClient
+
+    resource = AmazonDaxClient.resource(endpoint_url=dax_endpoint, region_name=region)
+    return resource.Table(table_name)
+
+
 class DynamoDBRepository(
     PostWriteRepository,
     PostReadRepository,

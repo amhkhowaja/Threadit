@@ -11,7 +11,7 @@ from threadit_core.api.jwt_verify import configure_verifier
 from threadit_core.config import load_settings
 from threadit_core.domain.author import author_handle
 from threadit_core.logging import configure_logging
-from threadit_core.repositories.dynamodb import DynamoDBRepository, build_table
+from threadit_core.repositories.dynamodb import DynamoDBRepository, build_dax_table, build_table
 from threadit_core.repositories.opensearch import OpenSearchIndex
 from threadit_core.repositories.s3_presigner import S3AttachmentPresigner, build_s3_client
 from threadit_core.repositories.search_index import SearchHit
@@ -20,11 +20,20 @@ from threadit_core.services.read_service import ReadService
 
 
 def build_read_service(settings) -> ReadService:
-    table = build_table(
-        table_name=settings.table_name,
-        region=settings.aws_region,
-        endpoint_url=settings.aws_endpoint_url,
-    )
+    if settings.dax_endpoint:
+        # Cached reads via DAX; ConsistentRead requests (read-your-own-write) are
+        # passed through to DynamoDB by DAX, so correctness is preserved.
+        table = build_dax_table(
+            table_name=settings.table_name,
+            region=settings.aws_region,
+            dax_endpoint=settings.dax_endpoint,
+        )
+    else:
+        table = build_table(
+            table_name=settings.table_name,
+            region=settings.aws_region,
+            endpoint_url=settings.aws_endpoint_url,
+        )
     repo = DynamoDBRepository(table)
     search = (
         OpenSearchIndex(

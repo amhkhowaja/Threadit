@@ -8,6 +8,10 @@ variable "enable_images" {
   type    = bool
   default = true
 }
+variable "dax_cluster_arn" {
+  type    = string
+  default = ""
+}
 
 data "aws_iam_policy_document" "ecs_assume" {
   statement {
@@ -94,6 +98,28 @@ resource "aws_iam_role_policy" "read_s3" {
   name   = "s3-images-read"
   role   = aws_iam_role.read.id
   policy = data.aws_iam_policy_document.read_s3[0].json
+}
+
+# DAX data-plane reads (only when a DAX cluster is provisioned). DAX passes
+# ConsistentRead through to DynamoDB, which the read role already allows.
+data "aws_iam_policy_document" "read_dax" {
+  count = var.dax_cluster_arn == "" ? 0 : 1
+  statement {
+    actions = [
+      "dax:GetItem",
+      "dax:Query",
+      "dax:BatchGetItem",
+      "dax:Scan",
+    ]
+    resources = [var.dax_cluster_arn]
+  }
+}
+
+resource "aws_iam_role_policy" "read_dax" {
+  count  = var.dax_cluster_arn == "" ? 0 : 1
+  name   = "dax-read"
+  role   = aws_iam_role.read.id
+  policy = data.aws_iam_policy_document.read_dax[0].json
 }
 
 # ECS task execution role (pull image, write logs).

@@ -18,6 +18,10 @@ variable "opensearch_endpoint" {
   type    = string
   default = ""
 }
+variable "dax_endpoint" {
+  type    = string
+  default = ""
+}
 
 resource "aws_ecs_cluster" "main" {
   name = "${var.name_prefix}-cluster"
@@ -63,6 +67,8 @@ resource "aws_ecs_task_definition" "svc" {
         { name = "THREADIT_IMAGES_CLOUDFRONT_DOMAIN", value = var.images_cloudfront_domain },
         { name = "THREADIT_OPENSEARCH_ENDPOINT", value = var.opensearch_endpoint },
         { name = "THREADIT_OPENSEARCH_SIGN", value = var.opensearch_endpoint == "" ? "false" : "true" },
+        # DAX read cache: only the read service routes through it.
+        { name = "THREADIT_DAX_ENDPOINT", value = each.key == "read" ? var.dax_endpoint : "" },
       ]
       logConfiguration = {
         logDriver = "awslogs"

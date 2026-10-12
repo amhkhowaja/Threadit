@@ -114,6 +114,7 @@ module "ecs_alb" {
   attachments_bucket       = module.s3_images.bucket_name
   images_cloudfront_domain = var.enable_images_cdn ? module.cloudfront[0].domain_name : ""
   opensearch_endpoint      = var.enable_search ? module.opensearch[0].endpoint : ""
+  dax_endpoint             = var.enable_dax ? "daxs://${module.dax[0].cluster_endpoint}" : ""
 }
 
 module "iam" {
@@ -121,6 +122,7 @@ module "iam" {
   name_prefix       = var.name_prefix
   table_arn         = module.dynamodb.table_arn
   images_bucket_arn = module.s3_images.bucket_arn
+  dax_cluster_arn   = var.enable_dax ? module.dax[0].cluster_arn : ""
 }
 
 module "s3_images" {
@@ -152,11 +154,13 @@ module "indexer" {
 }
 
 module "dax" {
-  count       = var.enable_dax ? 1 : 0
-  source      = "./modules/dax"
-  name_prefix = var.name_prefix
-  subnet_ids  = module.network.private_subnet_ids
-  table_arn   = module.dynamodb.table_arn
+  count        = var.enable_dax ? 1 : 0
+  source       = "./modules/dax"
+  name_prefix  = var.name_prefix
+  subnet_ids   = var.enable_prod_web ? module.network.public_subnet_ids : module.network.private_subnet_ids
+  table_arn    = module.dynamodb.table_arn
+  vpc_id       = module.network.vpc_id
+  client_sg_id = var.enable_prod_web ? module.network.service_security_group_id : ""
 }
 
 module "elasticache" {

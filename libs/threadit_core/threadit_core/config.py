@@ -19,6 +19,10 @@ class Settings(BaseSettings):
 
     table_name: str = Field(default="threadit")
 
+    # DAX (P2 read cache). When set, read-path queries go through the DAX cluster
+    # endpoint (microsecond cached reads); empty => read DynamoDB directly.
+    dax_endpoint: str = Field(default="")
+
     # Cognito (claims trusted from the API Gateway authorizer in P1).
     cognito_issuer: str | None = Field(default=None)
     cognito_audience: str | None = Field(default=None)

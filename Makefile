@@ -22,7 +22,7 @@ install: $(VENV) ## Install runtime + dev dependencies
 	$(PIP) install -q --upgrade pip
 	$(PIP) install -q \
 		fastapi==0.115.5 pydantic==2.9.2 pydantic-settings==2.6.1 \
-		boto3==1.35.54 structlog==24.4.0 "pyjwt[crypto]==2.9.0" \
+		boto3==1.35.54 amazon-dax-client==2.1.0 structlog==24.4.0 "pyjwt[crypto]==2.9.0" \
 		"uvicorn[standard]==0.32.0" \
 		pytest==8.3.3 pytest-asyncio==0.24.0 pytest-cov==6.0.0 \
 		httpx==0.27.2 ruff==0.7.2 import-linter==2.1
