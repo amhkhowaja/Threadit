@@ -7,6 +7,7 @@ from threadit_core.api.cors import install_cors
 from threadit_core.api.dtos import CommentResponse, PageResponse, PostResponse
 from threadit_core.api.errors import install_error_handling
 from threadit_core.api.identity import require_user_id
+from threadit_core.api.jwt_verify import configure_verifier
 from threadit_core.config import load_settings
 from threadit_core.domain.author import author_handle
 from threadit_core.logging import configure_logging
@@ -47,6 +48,7 @@ def build_read_service(settings) -> ReadService:
 async def lifespan(app: FastAPI):
     settings = load_settings()
     configure_logging(settings.log_level)
+    configure_verifier(settings.cognito_issuer or "", settings.cognito_audience)
     app.state.read_service = build_read_service(settings)
     app.state.image_resolver = _build_image_resolver(settings)
     yield

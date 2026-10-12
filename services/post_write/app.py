@@ -14,6 +14,7 @@ from threadit_core.api.dtos import (
 )
 from threadit_core.api.errors import install_error_handling
 from threadit_core.api.identity import require_idempotency_key, require_user_id
+from threadit_core.api.jwt_verify import configure_verifier
 from threadit_core.config import load_settings
 from threadit_core.logging import configure_logging
 from threadit_core.repositories.dynamodb import (
@@ -49,6 +50,7 @@ def build_write_service(settings) -> WriteService:
 async def lifespan(app: FastAPI):
     settings = load_settings()
     configure_logging(settings.log_level)
+    configure_verifier(settings.cognito_issuer or "", settings.cognito_audience)
     app.state.write_service = build_write_service(settings)
     app.state.rate_limiter = _build_rate_limiter(settings)
     app.state.rate_limit = settings.write_rate_limit

@@ -53,6 +53,9 @@ select = ["E", "F", "I", "B", "UP", "S", "A", "C4"]
 "tests/**" = ["S101", "S105", "S106"]
 "tools/smoke.py" = ["S101"]
 "tools/e2e_realaws.py" = ["S101"]
+# Seed utilities fetch from trusted public APIs over https and tolerate
+# per-item fetch failures by design (best-effort demo seeding).
+"scripts/seed/*.py" = ["S310", "S110", "S112"]
 
 # import-linter: no AWS type crosses the repository boundary (R5)
 [tool.importlinter]
