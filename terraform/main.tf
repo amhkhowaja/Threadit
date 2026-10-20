@@ -116,6 +116,9 @@ module "ecs_alb" {
   opensearch_endpoint      = var.enable_search ? module.opensearch[0].endpoint : ""
   dax_endpoint             = var.enable_dax ? "daxs://${module.dax[0].cluster_endpoint}" : ""
   redis_endpoint           = var.enable_elasticache ? module.elasticache[0].endpoint : ""
+  write_desired_count      = var.write_desired_count
+  write_rate_limit         = var.write_rate_limit
+  write_rate_window_s      = var.write_rate_window_s
 }
 
 module "iam" {

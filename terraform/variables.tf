@@ -119,3 +119,21 @@ variable "frontend_public_url" {
   default     = ""
   description = "Public origin for Cognito callback + CORS. If empty, uses the frontend CloudFront URL."
 }
+
+variable "write_desired_count" {
+  type        = number
+  default     = 1
+  description = "Number of write-service Fargate tasks (set >1 to verify the shared Redis rate limiter)."
+}
+
+variable "write_rate_limit" {
+  type        = number
+  default     = 30
+  description = "Per-user write rate limit (requests per window)."
+}
+
+variable "write_rate_window_s" {
+  type        = number
+  default     = 60
+  description = "Rate-limit window in seconds."
+}

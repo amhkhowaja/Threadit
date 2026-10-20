@@ -26,6 +26,18 @@ variable "redis_endpoint" {
   type    = string
   default = ""
 }
+variable "write_desired_count" {
+  type    = number
+  default = 1
+}
+variable "write_rate_limit" {
+  type    = number
+  default = 30
+}
+variable "write_rate_window_s" {
+  type    = number
+  default = 60
+}
 
 resource "aws_ecs_cluster" "main" {
   name = "${var.name_prefix}-cluster"
@@ -75,6 +87,8 @@ resource "aws_ecs_task_definition" "svc" {
         { name = "THREADIT_DAX_ENDPOINT", value = each.key == "read" ? var.dax_endpoint : "" },
         # ElastiCache (Redis): shared rate-limit state (write service consumes it).
         { name = "THREADIT_REDIS_ENDPOINT", value = var.redis_endpoint },
+        { name = "THREADIT_WRITE_RATE_LIMIT", value = tostring(var.write_rate_limit) },
+        { name = "THREADIT_WRITE_RATE_WINDOW_S", value = tostring(var.write_rate_window_s) },
       ]
       logConfiguration = {
         logDriver = "awslogs"
@@ -142,7 +156,7 @@ resource "aws_ecs_service" "svc" {
   name            = "${var.name_prefix}-${each.key}"
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.svc[each.key].arn
-  desired_count   = 1
+  desired_count   = each.key == "write" ? var.write_desired_count : 1
   launch_type     = "FARGATE"
 
   network_configuration {
